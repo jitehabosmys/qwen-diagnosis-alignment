@@ -1,0 +1,24 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+*.pyo
+*.pyd
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual environments
+.venv/
+
+# Local environment
+.env
+
+# OS / editor noise
+.DS_Store
+
+# Generated archives and intermediate artifacts
+data/archive/
+
+# Runtime caches
+.pytest_cache/

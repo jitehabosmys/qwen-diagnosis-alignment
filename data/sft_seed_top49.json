@@ -1,0 +1,1114 @@
+[
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Bitsandbytes throws a setup failure when building from source on my Linux machine.",
+      "environment": "Ubuntu 22.04, CUDA 11.8",
+      "command": "python setup.py build_ext --inplace",
+      "log": "CUDA_SETUP: WARNING! libcudart.so not found in any environmental path."
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "源码编译期间无法定位核心 CUDA 运行时导致编译断链。",
+      "root_cause": "系统的动态链接查找路径中未包含 NVIDIA CUDA 核心运行时的绝对路径，致使 nvcc 编译器无法获取必要的依赖支持。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "执行全局查找以定位库文件：find / -name libcudart.so 2>/dev/null。",
+        "将其路径永久追加至.bashrc 的环境变量中。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Bitsandbytes defaults to CPU version even though my GPU has compute capability 8.6.",
+      "environment": "CUDA 12.4, Compute Capability 8.6",
+      "command": "python -m bitsandbytes",
+      "log": "Library not found: /notebooks/bitsandbytes/bitsandbytes/libbitsandbytes_cuda124.so."
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "显式请求加载的高版本二进制库缺失，导致系统被迫回退纯 CPU 模式。",
+      "root_cause": "环境显式请求加载 cuda124 二进制库，但下载的预装包内并未物理包含该特定架构版本的共享对象文件。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Installing flash-attention fails with a massive memory spike and ninja build error.",
+      "environment": "72 CPU cores, 376GB RAM, CUDA 11.7, PyTorch 2.0.1",
+      "command": "pip install flash-attn --no-build-isolation",
+      "log": "ninja: build stopped: subcommand failed. subprocess.CalledProcessError: Command '['ninja', '-v', '-j', '72']' returned non-zero exit status 1"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "并行编译高维 C++ 模板导致的宿主机物理内存耗尽问题。",
+      "root_cause": "ninja 调度器默认拉起 72 个并发线程，针对 bfloat16_t 的复杂 C++ 模板实例化的内存占用叠加，直接超出了宿主机的物理内存极限。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Flash-attention setup.py fails indicating unsupported CUDA versions.",
+      "environment": "CUDA 11.4",
+      "command": "pip install flash-attn",
+      "log": "RuntimeError: FlashAttention is only supported on CUDA 11.6 and above."
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "系统级 CUDA 编译器过旧，无法支撑现代注意力算子的汇编映射。",
+      "root_cause": "系统层级的 CUDA 编译器版本陈旧，缺乏融合注意力机制所需的底层最新硬件内联汇编算子指令支持。",
+      "missing_info": [
+        "宿主机操作系统环境是否允许安全执行大规模核心显卡驱动的热升级？。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "My environment is broken after installing transformers and FastAPI due to Pydantic.",
+      "environment": "Pydantic 2.10.3, Transformers 4.46.0",
+      "command": "import transformers",
+      "log": "module 'transformers.integrations' has no attribute 'deepspeed'"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "Pydantic V1 向 V2 架构的变动引发深层次依赖树命名空间污染。",
+      "root_cause": "Pydantic V2 底层 Rust 核心的重构引发了不兼容，依赖树内部冲突导致模块初始化阶段属性未被完全加载与解析。",
+      "missing_info": [
+        "具体是由哪一个下游隐性模块组件强行绑定拉扯了 V1 的遗留依赖逻辑？。"
+      ],
+      "next_steps": [
+        "建立严格的 Python 虚拟环境版本锁定机制，强制降级 pydantic<2.0.0 直至排查完毕。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Accelerate launch just exits without any output or error when using multi_gpu flag.",
+      "environment": "Accelerate 0.15, PyTorch 1.9.0, Multi-GPU",
+      "command": "accelerate launch --multi_gpu my_script.py",
+      "log": "[No output, silent exit]"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "老旧 PyTorch 遭遇现代封装框架调用的分布式初始化原语脱节。",
+      "root_cause": "底层的旧版本 PyTorch 缺乏现代分布式模块调用接口，导致 C++ 扩展在调用缺失的 Rendezvous 函数时直接触发未经捕获的底层段错误。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "升级底层的基础深度学习框架至 torch>=1.13.1 以上，对齐底层分布式通信通信机制。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在 Windows/WSL2 下运行模型，bitsandbytes 提示 CUDA Setup failed",
+      "environment": "WSL2 Ubuntu, bitsandbytes 0.38.1, PyTorch 2.0.1",
+      "command": "python train.py",
+      "log": "RuntimeError: CUDA Setup failed despite GPU being available. Inspect the output of python -m bitsandbytes"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "WSL2 环境下 CUDA 驱动与 bitsandbytes 扩展的路径解析不匹配。",
+      "root_cause": "WSL2 中的 CUDA 库通常位于 /usr/lib/wsl/lib，而 bitsandbytes 的默认探测脚本仅扫描标准的 /usr/local/cuda 路径。由于符号链接未建立或路径未导出，导致扩展层抛出运行时错误。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Conda 环境中升级 CUDA 后，bitsandbytes 持续报错说找不到 so 文件",
+      "environment": "Conda, CUDA 11.7, bitsandbytes",
+      "command": "import bitsandbytes as bnb",
+      "log": "CUDA Setup failed despite CUDA being available. Please run python -m bitsandbytes"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "Conda 虚拟环境隔离导致的系统级 CUDA 库不可见。",
+      "root_cause": "Conda 安装的 cudatoolkit 仅包含运行时库，缺失 bitsandbytes 编译与加载时所需的底层驱动链接。扩展模块在 Conda 的 lib 目录下找不到正确的.so，退回宿主机寻找失败。",
+      "missing_info": [
+        "Conda 环境内 cudatoolkit 与 cudnn 的版本列表。"
+      ],
+      "next_steps": [
+        "在 Conda 环境中执行：cp site-packages/bitsandbytes/libbitsandbytes_cuda117.so site-packages/bitsandbytes/libbitsandbytes_cpu.so 强制替换。",
+        "或安装完整版开发库：conda install -c nvidia cuda-nvcc=11.7。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "更新 transformers 后，加载 4bit 模型报 'torch' is not defined 错误",
+      "environment": "transformers 4.35, bitsandbytes, Yi-34B-Chat-4bits",
+      "command": "AutoModelForCausalLM.from_pretrained('01-ai/Yi-34B-Chat-4bits')",
+      "log": "File \".../transformers/integrations/bitsandbytes.py\", line 331, def dequantize_bnb_weight(weight: torch.nn.Parameter... NameError: name 'torch' is not defined"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "Transformers 集成模块内部依赖延迟加载引发的作用域缺失。",
+      "root_cause": "在某些旧版 transformers 中，集成 bitsandbytes 时使用了延迟 import torch 的逻辑。当量化分支被触发时，局部命名空间内未注入 torch，导致函数签名解析阶段抛出 NameError。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "在脚本最顶部手动 import torch。",
+        "升级 transformers 到 4.36+，或降级回退到模型 release 时的匹配版本。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "运行 accelerate launch 时报错提示找不到 IPv6 的主节点",
+      "environment": "Linux, accelerate 1.6.0, H100 GPU",
+      "command": "accelerate launch --num_processes=2 run.py",
+      "log": "[c10d] The IPv6 network addresses of (job-b1a4...-master-0, 23456) cannot be retrieved (gai error: -2 - Name or service not known)"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "c10d 后端错误地解析了不存在的 IPv6 主机名。",
+      "root_cause": "分布式训练初始化时，如果环境变量 MASTER_ADDR 被注入了基于 K8s 或云平台的非法主机名，socket 层的 getaddrinfo 函数将解析失败，触发 c10d 通信后端的致命异常。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在 72 核服务器上安装 flash-attention 总是失败，系统内存高达 197GB",
+      "environment": "flash-attn, PyTorch 2.0.1, 72 Cores CPU",
+      "command": "pip install flash-attn --no-build-isolation",
+      "log": "here instantiation of \"void run_mha_fwd_hdim128(Flash_fwd_params &, cudaStream_t)... ninja: build stopped: subcommand failed."
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "Ninja 激进的多进程并发编译导致主机内存 OOM。",
+      "root_cause": "Ninja 构建系统默认根据 CPU 核心数启动并发任务。编译 flash-attention 复杂的 C++ 模板（如 hdim128 的 BF16 内核）时，单个 ptxas 进程需消耗约 4GB 内存。72个进程并发导致超 280GB 内存需求，耗尽系统 RAM。",
+      "missing_info": [
+        "dmesg 中的 OOM killer 日志。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "尝试用 PyTorch 2.4.1 安装 flash-attn 2.5.8 源码失败",
+      "environment": "PyTorch 2.4.1, flash-attn 2.5.8",
+      "command": "MAX_JOBS=16 CUDA_HOME=\"/opt/conda\" python setup.py install",
+      "log": "subprocess.CalledProcessError: Command '['ninja', '-v', '-j', '16']' returned non-zero exit status 1"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "PyTorch 2.4 的 C++ 扩展宏与 FlashAttention 源码的接口存在破坏性更新冲突。",
+      "root_cause": "PyTorch 2.4 升级了底层的 ATen 接口和 C++ 扩展宏绑定机制。旧版本的 flash-attn 源码在调用废弃的 PyTorch C++ API 时引发链接时错误，导致 ninja 编译被强制终止。",
+      "missing_info": [
+        "ninja 截断的上方具体的 C++ 报错行 (如缺少标识符)。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "加载模型时报错，提示 pydantic 的 FieldInfo 对象缺少 required 属性",
+      "environment": "transformers, pydantic >= 2.4.0",
+      "command": "from transformers import AutoModelForCausalLM",
+      "log": "Failed to import transformers.generation.utils... 'FieldInfo' object has no attribute 'required'"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "Pydantic V2 移除了 V1 的核心反射属性导致 Transformers 生成模块崩溃。",
+      "root_cause": "Pydantic 2.0+ 重构了内部架构，移除了 FieldInfo.required 属性，改用 is_required()。Transformers 旧版的 generation.utils 仍尝试反射访问该遗留属性，造成模块导入时直接失败。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "启动 CLI 服务时，因为缺少依赖导致类型提示验证阶段直接抛出 NameError",
+      "environment": "transformers cli",
+      "command": "transformers-cli serve",
+      "log": "ImportError: cannot import name 'Qwen2_5_VLForConditionalGeneration' from 'transformers'"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "low",
+      "summary": "CLI 模块中的 TypeAdapter 急性求值触发了未解析的依赖缺失错误。",
+      "root_cause": "在 Python 的类型提示处理中，由于 pydantic 的 TypeAdapter 被用于类型断言并且未做 fail-safe 懒加载处理，当环境缺少相关视觉模型类依赖时，提前抛出了导入错误。",
+      "missing_info": [
+        "具体缺失的附加依赖包 (如 qwen-vl 依赖)。"
+      ],
+      "next_steps": [
+        "确保安装全量视觉依赖：pip install transformers[vision]。",
+        "更新 transformers 到包含该 bug修复的最新 commit。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "编译 DeepSpeed 时 fused_adam 扩展安装失败",
+      "environment": "DeepSpeed 0.9.2, PyTorch 2.3",
+      "command": "pip install deepspeed",
+      "log": "RuntimeError: Error building extension 'fused_adam'."
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "medium",
+      "summary": "PyTorch 高版本废弃了 DeepSpeed C++ 扩展所依赖的旧版 API。",
+      "root_cause": "在编译 fused_adam 的 CUDA 内核时，DeepSpeed 源码尝试调用 PyTorch 1.x 遗留的 THC (Torch Hardware Compute) 头文件或废弃的宏。PyTorch 2.3 已移除这些头文件，导致 nvcc 编译失败。",
+      "missing_info": [
+        "构建日志中具体的 C++ 语法错误行。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "多卡训练启动时报错 ModuleNotFoundError: No module named 'triton.runtime'",
+      "environment": "triton 2.0.0, transformers, bitsandbytes",
+      "command": "accelerate launch train.py",
+      "log": "ImportError: cannot import name 'driver' from 'triton.runtime' / RuntimeError: Failed to import transformers.integrations.bitsandbytes"
+    },
+    "output": {
+      "category": "dependency",
+      "severity": "high",
+      "summary": "Triton 引擎版本过低缺失 runtime 子模块。",
+      "root_cause": "bitsandbytes 和 transformers 依赖更新版本的 Triton（>=2.1）以支持高效的内核分发和驱动交互。Triton 2.0.0 架构中尚未引入 triton.runtime 模块，导致级联导入失败。",
+      "missing_info": [
+        "相关库的准确版本号。",
+        "完整的安装命令和报错上下文。"
+      ],
+      "next_steps": [
+        "核对 Python、PyTorch、CUDA 与相关扩展的版本组合是否兼容。",
+        "在干净虚拟环境中复现，并保留完整安装日志。",
+        "优先使用项目文档中明确支持的版本或预编译 wheel。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "I keep getting an OOM error where PyTorch tries to allocate exactly the free memory available.",
+      "environment": "PyTorch 1.10.0, GPU 24GB",
+      "command": "loss.backward()",
+      "log": "RuntimeError: CUDA out of memory. Tried to allocate 8.60 GiB (GPU 0; 23.70 GiB total capacity; 3.77 GiB already allocated; 8.60 GiB free; 12.92 GiB reserved in total by PyTorch)"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "缓存分配器因严重物理碎片化无法兑现表面空闲内存分配。",
+      "root_cause": "Caching Allocator 内部产生的极度显存碎片化导致系统无法在物理层面拼凑出一块符合申请尺寸极限的连续显存页区域。",
+      "missing_info": [
+        "数据集的前置处理是否含有导致批次形状发生剧烈长短变化的不良填充逻辑？。"
+      ],
+      "next_steps": [
+        "降低 batch size 或 max sequence length，并确认使用了合适的量化或 LoRA 配置。",
+        "检查是否启用了 gradient checkpointing、flash attention 或其他显存优化手段。",
+        "记录出错前后的显存占用，判断是峰值过高还是碎片化问题。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "OOM occurring at less than 70% GPU memory utilization with variable batch sizes.",
+      "environment": "PyTorch",
+      "command": "model.forward()",
+      "log": "Tried to allocate 6.60 GiB (GPU 0; 23.65 GiB total capacity; 14.12 GiB already allocated; 3.97 GiB free; 18.15 GiB reserved)"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "保留显存量急剧膨胀并与实际分配量产生大规模几何倒挂。",
+      "root_cause": "动态网络结构与高频变动的数据批次尺寸致使显存页无法被有效复用流转，导致保留内存池无限制膨胀挤占物理生存空间。",
+      "missing_info": [
+        "分布式配置、节点数和 GPU 数量。",
+        "出错前最后一段完整日志。"
+      ],
+      "next_steps": [
+        "在外部训练大循环的特定 Epoch 边界上，显式强插 torch.cuda.empty_cache() 释放死锁的保留内存池。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "CUDA OOM error populates even for very small tensors during backprop.",
+      "environment": "PyTorch",
+      "command": "scaler.scale(loss).backward()",
+      "log": "RuntimeError: CUDA out of memory. Tried to allocate 160.00 MiB (GPU 0; 14.76 GiB total capacity...)"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "张量对象生命周期捆绑导致自动求导动态图被永久驻留内存爆破。",
+      "root_cause": "代码使用了 allow_unreachable=True 或未能使用正确的数值方法收集损耗，导致附带了整个历史节点追踪流的庞大动态计算图被强制阻拦无法回收。",
+      "missing_info": [
+        "训练时的 batch size、序列长度和精度设置。",
+        "是否启用了 gradient checkpointing、LoRA 或量化加载。"
+      ],
+      "next_steps": [
+        "全程使用 loss.item() 提取仅涉及纯量浮点数值的内容写入评估日志，斩断任何显存图绑定逻辑。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Training stuck after several steps and raises an ALLREDUCE timeout error.",
+      "environment": "DeepSpeed 0.14.2, Transformers 4.42.3, A800-SXM4",
+      "command": "nohup deepspeed train.py",
+      "log": "[E ProcessGroupNCCL.cpp:563] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=3623, OpType=ALLREDUCE... Timeout(ms)=600000)"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "框架顶层配置的超时机制遭遇 DeepSpeed 底层硬编码初始化拦截击穿。",
+      "root_cause": "DeepSpeed ZeRO 阶段在初始化通讯模块内部，通过直接写死的 600 秒默认常量覆盖并且拦截了由顶层 Trainer 谨慎传递的 NCCL 超时设置参数。",
+      "missing_info": [
+        "是否存在数据异常极度拖累某一个独立工作进程导致的计算断崖？。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Getting a socket timeout error during DDP ALLGATHER operations.",
+      "environment": "PyTorch DDP",
+      "command": "trainer.train()",
+      "log": "WorkNCCL(SeqNum=1, OpType=ALLGATHER, NumelIn=1, NumelOut=8, Timeout(ms)=1800000) ran for 1800111 milliseconds before timing out."
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "各计算节点因批次承载的非对等负荷在同步屏障上产生严重的等待空转耗尽了超时极限。",
+      "root_cause": "分片文本长度由于极度不均衡的几何切割偏斜，计算量极小的节点提前抵达通信屏障，空耗休眠时间直到系统强制执行通信熔断保护。",
+      "missing_info": [
+        "分布式配置、节点数和 GPU 数量。",
+        "出错前最后一段完整日志。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Error when trying to fine-tune llama2 using DeepSpeed optimization.",
+      "environment": "DeepSpeed, Llama-2, A100 GPU",
+      "command": "torchrun --num_gpus=1 llm_training.py",
+      "log": "RuntimeError: Expected to mark a variable ready only once... Parameter at index 447 with name base_model.model.model.layers.31.mlp.down_proj.lora_B.default.weight has been marked as ready twice."
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "单次迭代路径触发了冗余的求导钩子操作打破了状态机校验。",
+      "root_cause": "DDP 模式下发现网路包含违规重入节点，即单个权重模块在未经切片或缓存保护的情况下于一轮迭代前向传播内多次复用计算。",
+      "missing_info": [
+        "网络是否存在高度变异或根据输入动态随机组装的前向重排路线图？。"
+      ],
+      "next_steps": [
+        "梳理拓扑杜绝网络中发生显式的共享同参数结构传递，或对定型架构强制激活 _set_static_graph()。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Trying to use BERTScore inside a Trainer loop crashes with an assertion error.",
+      "environment": "DeepSpeed ZeRO-3, Transformers 4.39.3",
+      "command": "deepspeed test.py",
+      "log": "AssertionError: ZeRO parameter intra parallel group is already initialized"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "在排他性并行作用域内违规叠加并激活副线深度模型初始化引发冲撞。",
+      "root_cause": "当试图通过 API 加载辅评模型的时候，底层驱动系统尝试在那个已被主要训练模型 ZeRO3 配置严密防守的同一个硬件空间内执行强行重叠初始化新兵组，遭到严重抗拒。",
+      "missing_info": [
+        "这类打分指标评价工具在功能架构上是否可以达成对训练前向反馈完全脱钩的独立生存模式？。"
+      ],
+      "next_steps": [
+        "执行全面系统解耦，强令一切需要依附副线异构权重的性能测试评价任务流离到物理层非相干区域甚至是纯 CPU 单核心外挂队列里排队执行。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "模型微调过程中突然崩溃，提示 OOM，但 nvidia-smi 看到还有显存",
+      "environment": "DeepSeek-Coder finetune, PyTorch 2.x",
+      "command": "trainer.train()",
+      "log": "If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation."
+    },
+    "output": {
+      "category": "training",
+      "severity": "medium",
+      "summary": "PyTorch Caching Allocator 显存碎片化阻塞了大块张量分配。",
+      "root_cause": "前向传播中生命周期不同的激活值与长短不一的梯度缓存交替释放，在 GPU 显存池中留下了无数微小的“空洞”。当注意力矩阵请求大块内存时，尽管总体剩余充足，但找不到连续块，触发 OOM。",
+      "missing_info": [
+        "训练的 max_seq_length 设置。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "使用 DeepSpeed 训练到第 33 步时卡死，10分钟后程序崩溃",
+      "environment": "Multi-node, DeepSpeed, NCCL",
+      "command": "accelerate launch training.py",
+      "log": "Watchdog caught collective operation timeout: WorkNCCL(SeqNum=4084, OpType=BROADCAST... ran for 600059 milliseconds"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "分布式节点间执行 BROADCAST 通信时失步引发死锁。",
+      "root_cause": "Rank 3 可能因为数据加载延迟、CPU GIL 锁竞争或数据 batch 处理时间过长，未能及时到达 NCCL barrier。其他 Rank 等待超过 600 秒的内置看门狗阈值，强制终止通信组以防止硬件挂起。",
+      "missing_info": [
+        "分布式配置、节点数和 GPU 数量。",
+        "出错前最后一段完整日志。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在 ZeRO-3 环境下训练，刚开始第一步梯度更新就报错维度不匹配",
+      "environment": "DeepSpeed ZeRO-3, AdamW",
+      "command": "trainer.train()",
+      "log": "RuntimeError: The size of tensor a (8192384) must match the size of tensor b (262156288) at non-singleton dimension 0"
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "优化器更新步骤中参数分片与全局梯度的形状发生广播碰撞。",
+      "root_cause": "ZeRO Stage 3 会将模型参数拉平并分片分布在多卡上（8192384 是一张卡的分片大小，262156288 是原始权重）。当 AdamW 尝试利用未分片的动量或异常还原的梯度进行加法更新时，触发张量维度校验失败。",
+      "missing_info": [
+        "分布式配置、节点数和 GPU 数量。",
+        "出错前最后一段完整日志。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "生成任务推理中途随机崩溃，提示 CUDA error，堆栈毫无关联",
+      "environment": "Llama-7B, 4bit quantization",
+      "command": "pipeline(\"text-generation\")",
+      "log": "RuntimeError: CUDA error: device-side assert triggered... Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions."
+    },
+    "output": {
+      "category": "training",
+      "severity": "high",
+      "summary": "CUDA 内核执行期间发生了非法的显存越界访问。",
+      "root_cause": "极大概率是 Tokenizer 输出的 token_id 超出了模型 nn.Embedding 层的 vocab_size 上限。例如 token_id=32001，而词表大小仅为 32000。由于 CUDA 是异步执行，主机的 traceback 会漂移到下一个计算节点。",
+      "missing_info": [
+        "词表长度与 Embedding 权重的 shape 映射。"
+      ],
+      "next_steps": [
+        "保留完整分布式日志，先确认是哪一个 rank 先报错或卡住。",
+        "检查网络、NCCL 相关环境变量和节点间连通性。",
+        "用更小的数据或单卡配置复现，缩小问题范围。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "使用 SFTTrainer 和 Unsloth 微调 Llama 突然出现 OOM，之前一直正常",
+      "environment": "RTX 3090 24GB, Unsloth, PyTorch 2.3",
+      "command": "trainer.train()",
+      "log": "File sft_trainer.py, loss = self.compute_loss(model, inputs)... RuntimeError: CUDA error: out of memory"
+    },
+    "output": {
+      "category": "training",
+      "severity": "medium",
+      "summary": "Unsloth 与新版 TRL 的交互破坏了显存优化逻辑。",
+      "root_cause": "TRL/SFTTrainer 的某个更新可能默认关闭了梯度检查点 (gradient checkpointing)，或者增加了不必要的中间缓存（如 NEFTune 噪声注入），导致前向激活值堆积，超出了单张 3090 的显存阈值。",
+      "missing_info": [
+        "训练时的 batch size、序列长度和精度设置。",
+        "是否启用了 gradient checkpointing、LoRA 或量化加载。"
+      ],
+      "next_steps": [
+        "降低 batch size 或 max sequence length，并确认使用了合适的量化或 LoRA 配置。",
+        "检查是否启用了 gradient checkpointing、flash attention 或其他显存优化手段。",
+        "记录出错前后的显存占用，判断是峰值过高还是碎片化问题。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Dataset processing fails entirely on custom JSON file reading.",
+      "environment": "LLaMA-Factory",
+      "command": "llamafactory-cli train",
+      "log": "Checksum failed: mismatched SHA-1 hash value... error occurs because dataset contains non-English characters or LATEX-formatted equations"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "文件底层的原始字节混杂摧毁了强类型映射结构的构建过程。",
+      "root_cause": "原始输入字典内混入了未经绝对斜杠转义保护处理的 LaTeX 公式系统标记符号以及无法辨认的 Unicode 特殊字符，击穿了 Arrow 固若金汤的序列化预检引擎。",
+      "missing_info": [
+        "一条最小可复现的数据样本。",
+        "预处理脚本或数据集配置片段。"
+      ],
+      "next_steps": [
+        "抽取一条最小样本单独跑预处理，先确认字段和编码是否符合预期。",
+        "对数据集做 schema、编码和长度校验，避免脏样本进入训练。",
+        "必要时降低并行处理数，确认问题不是由多进程放大的。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "LLaMA-Factory pending forever during data processing stage.",
+      "environment": "LLaMA-Factory 0.9.3, Python 3.11.9",
+      "command": "llamafactory-cli train cfg/yaml",
+      "log": "Converting format of dataset (num_proc=16): 100%|... [Hangs indefinitely]"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "巨型单片结构下并发子处理陷入饥饿等待的信号量问题。",
+      "root_cause": "极度粗暴拉起高达 16 条分支进程却只能面对孤单一片不可分割巨型物理文本文件，使得饥肠辘辘的工作节点在 IPC 管道上将主控调度活活卡死。",
+      "missing_info": [
+        "原始存储文件的物理拆解碎片状态情况摸底记录是否保存完好？。"
+      ],
+      "next_steps": [
+        "主动压制或者强行调降 num_proc 为极小的标量单元，或者事先在线下用拆分法把文件均匀切成符合负载的相等切片组块。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Training executes successfully without errors, but the output directory is completely empty.",
+      "environment": "LLaMA-Factory, Alpaca format JSONL",
+      "command": "llamafactory-cli train --dataset data --output_dir output",
+      "log": "✓ Training completed for MODEL_001"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "静默式验证器抛除未达标的数据后导致虚幻空转计算。",
+      "root_cause": "送检的模板键值体系极不规整，核心必填操作键缺乏实质性输入载荷内容（出现纯粹空置串），验证整理系统执行了毫无保留的大规模剔除操作，随后提交了0载荷任务。",
+      "missing_info": [
+        "需要直接解剖第一条有问题的字典全貌来明确病灶。"
+      ],
+      "next_steps": [
+        "搭建起硬骨干验证结构，严格锁定不准任何必须依赖的结构化键值流落成非法状态。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "The loss behaves erratically, and logging indicates input_ids and labels mismatch.",
+      "environment": "Transformers, custom generation constraints",
+      "command": "generate_and_tokenize_prompt()",
+      "log": "Length mismatch between `input_ids` and `labels` in {input_text}!"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "张量不对称追加动作造成概率预测目标位置整体滑动崩溃。",
+      "root_cause": "高度自由编写的加工脚本只管粗放式地将结尾占位指令接驳在原始表列后面，忘记对应地使用防算黑块填充掩盖目标矩阵，使得整个比对操作失真对位。",
+      "missing_info": [
+        "一条最小可复现的数据样本。",
+        "预处理脚本或数据集配置片段。"
+      ],
+      "next_steps": [
+        "强效挂钩追加控制函数，任何扩长指令均必须携行附加标签位的掩蔽防干扰补白代码运行。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "Auto-regressive generation throws indexing errors randomly.",
+      "environment": "Transformers, text-generation",
+      "command": "model.generate()",
+      "log": "Token indices sequence length is longer than the specified maximum sequence length for this model (746 > 512). Running this sequence through the model will result in indexing errors."
+    },
+    "output": {
+      "category": "data",
+      "severity": "medium",
+      "summary": "最终组合成的数组尺度超过位置映射极限矩阵容忍上限直接踩雷。",
+      "root_cause": "未经抑制延展的计算列实际越过了由初始建筑架构铁律固定死的极限矩阵定位点（比如硬生生读取位置 746 但地基只打到了 512）。",
+      "missing_info": [
+        "一条最小可复现的数据样本。",
+        "预处理脚本或数据集配置片段。"
+      ],
+      "next_steps": [
+        "施加阶段截停约束，严格把关 truncation 刀斧属性与长度墙高。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "LLaMA-Factory 训练载入数据集时触发 RemoteTraceback 和 PyArrow Invalid 错误",
+      "environment": "LLaMA-Factory 0.9.4, datasets 3.6.0",
+      "command": "python scripts/stat_utils/length_cdf.py",
+      "log": "pyarrow.lib.ArrowInvalid: JSON parse error: Column() changed from object to array in row 0"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "HuggingFace Datasets 解析 JSONL 文件的混合数据类型失败。",
+      "root_cause": "多进程环境下，datasets 底层基于 PyArrow 引擎执行块级读取。PyArrow 会根据第一个 chunk 推断 schema。如果前面的记录中某字段是对象（字典），而后续记录中该字段突变为数组或空列表，破坏了纯列式数据的结构一致性，触发硬终端。",
+      "missing_info": [
+        "一条最小可复现的数据样本。",
+        "预处理脚本或数据集配置片段。"
+      ],
+      "next_steps": [
+        "使用脚本预处理清理数据：确保所有 tools 或 messages 字段要么全是列表，要么全是字典结构。",
+        "在 load_dataset 时通过 features 显式指定 schema。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "训练进行到一般，某张卡突然报错 UnicodeDecodeError 并退出，导致死锁",
+      "environment": "LLaMA-Factory, Multi-GPU",
+      "command": "llamafactory-cli train",
+      "log": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc0 in position 17: invalid start byte"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "原始语料中混入了非法字符，引起分布式训练局部崩溃及全局死锁。",
+      "root_cause": "网络爬虫抓取的 JSONL 数据中含有非标准 UTF-8 字节。Python 内置 open 或 json 模块读取时引发解码失败。由于分布式 DataLoader 的迭代机制，抛错节点的进程直接终止，而其余节点挂起在通信原语上，最终表现为 NCCL 宕机。",
+      "missing_info": [
+        "一条最小可复现的数据样本。",
+        "预处理脚本或数据集配置片段。"
+      ],
+      "next_steps": [
+        "抽取一条最小样本单独跑预处理，先确认字段和编码是否符合预期。",
+        "对数据集做 schema、编码和长度校验，避免脏样本进入训练。",
+        "必要时降低并行处理数，确认问题不是由多进程放大的。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "使用 apply_chat_template 准备对话格式时报找不到 template",
+      "environment": "Gemma-4, transformers 5.5.0",
+      "command": "tokenizer.apply_chat_template(chat)",
+      "log": "ValueError: Cannot use chat template functions because tokenizer.chat_template is not set and no template argument was passed!"
+    },
+    "output": {
+      "category": "inference",
+      "severity": "medium",
+      "summary": "Tokenizer 初始化未能自动加载外部拆分的 Jinja 模板文件。",
+      "root_cause": "旧版模型将 chat_template 字符串写死在 tokenizer_config.json 中。由于模板变得愈加复杂，新模型（如 Gemma-4）将其提取成了独立的 chat_template.jinja。AutoTokenizer 默认不具有探测并读取此独立文件的能力，导致对象属性缺失。",
+      "missing_info": [
+        "模型仓库中是否存在独立的.jinja 文件。"
+      ],
+      "next_steps": [
+        "通过 `hf_hub_download` 手动下载 `chat_template.jinja`。",
+        "使用 `with open()` 读取文本并赋值：`tokenizer.chat_template = f.read()`。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "调用 apply_chat_template 失败，抛出 Jinja2 的模板语法错误",
+      "environment": "transformers 4.45.0, Qwen2.5 Chat Template",
+      "command": "tokenizer.apply_chat_template(messages, return_assistant_tokens_mask=True)",
+      "log": "TemplateSyntaxError Traceback... _compile_jinja_template(chat_template)"
+    },
+    "output": {
+      "category": "inference",
+      "severity": "medium",
+      "summary": "Jinja 模板字符串中缺少响应宏导致条件编译失败。",
+      "root_cause": "当用户开启 `return_assistant_tokens_mask=True` 选项时，底层代码通过 Jinja 引擎查找特殊的 `{% generation %}` 宏语法树，由于该模型的 chat template 并未包含这些用于精细区分 user/assistant mask 的关键字，编译崩溃。",
+      "missing_info": [
+        "传入的 messages 对话结构。"
+      ],
+      "next_steps": [
+        "在调用时设置 `return_assistant_tokens_mask=False`。",
+        "或替换为包含 generation block 支持的官方标准 chat template 字符串。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "预训练加载切块数据集后，生成的文本开头很奇怪，缺了字母",
+      "environment": "LLaMA-Factory dataset packing",
+      "command": "llamafactory-cli train",
+      "log": "Output text: 't think you need all the bells and whistles?"
+    },
+    "output": {
+      "category": "inference",
+      "severity": "high",
+      "summary": "添加 BOS 特殊 token 时发生了破坏性的数组索引覆盖。",
+      "root_cause": "预训练数据集处理器在将多段文本拼接并启用打包（packing）后，向 sequence 添加起始标记时使用了直接赋值逻辑：`result[\"input_ids\"][i] = bos_id`。这会覆盖原本存在于第 0 位的实际子词 ID（如 \"Don\" 被替换为了 \"\"），从而破坏文本语义。",
+      "missing_info": [
+        "配置文件中的 max_cutoff_length 设置。"
+      ],
+      "next_steps": [
+        "修改源码的拼接逻辑：`result[\"input_ids\"][i] = [bos_id] + result[\"input_ids\"][i][:-1]` 以在原数组头部执行插入并截断尾部防止溢出。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "vLLM 模型 capture_model 捕获 CUDA 图时直接 OutOfMemoryError",
+      "environment": "vLLM, Unsloth Patched, 24GB VRAM",
+      "command": "vllm generation",
+      "log": "Graph capturing finished in 23 secs, took 2.28 GiB... Actual usage is 3.61 GiB for weight, 2.28 GiB for CUDAGraph memory... OutOfMemoryError"
+    },
+    "output": {
+      "category": "deployment",
+      "severity": "high",
+      "summary": "CUDA Graph 的静态显存工作区分配击穿了显存余量。",
+      "root_cause": "为了加速 decode，vLLM 会对多种 batch size 的执行流进行 CUDA Graph 捕获。这需要预先锁定一大块固定显存（CUDAGraph workspace）。如果在初始化时 gpu_memory_utilization 分配给 KV Cache 太多，会导致捕获过程显存不足。",
+      "missing_info": [
+        "当前设置的 gpu_memory_utilization 值。"
+      ],
+      "next_steps": [
+        "先核对驱动、CUDA、容器镜像和 vLLM 版本是否在支持矩阵内。",
+        "用最小启动参数复现，再逐步加回显存利用率或并发配置。",
+        "保留完整启动日志，重点检查 GPU 初始化、模板解析和内核编译相关报错。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "vLLM 初始化引擎时失败，提示没有多余的显存给 cache blocks",
+      "environment": "vLLM 0.6.3",
+      "command": "vllm serve",
+      "log": "ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine."
+    },
+    "output": {
+      "category": "deployment",
+      "severity": "high",
+      "summary": "模型权重与预留空间占满显存，导致 PagedAttention 缓存块无法分配。",
+      "root_cause": "vLLM 启动时进行一次 dummy forward profile，据此计算可用于 KV Cache 的显存块。如果模型本身占用的显存加上 PyTorch 运行时上下文已经超过了 gpu_memory_utilization 指定的上限，KV 块的数量将计算为 0。",
+      "missing_info": [
+        "模型参数量与显卡型号容量。"
+      ],
+      "next_steps": [
+        "如果卡容量不足，考虑使用 --quantization awq 开启权重量化。",
+        "在启动时提升占用上限：--gpu-memory-utilization 0.95 或降低 --max-model-len。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在运行 LlamaFactory 加载自定义 CSV 数据集进行指令微调时，报校验失败并在 align_dataset 时完全崩溃。",
+      "environment": "LlamaFactory, DeepSpeed, Python 3.10",
+      "command": "run_exp() -> run_sft() -> get_dataset()",
+      "log": "llmtuner.data.utils - Checksum failed: missing SHA-1 hash value in dataset_info.json\\nKeyError: None"
+    },
+    "output": {
+      "category": "data",
+      "severity": "medium",
+      "summary": "数据集注册表的键映射配置缺失，导致列提取器获取空键值。",
+      "root_cause": "在 LlamaFactory 的 dataset_info.json 架构中，如果没有为自定义数据集提供 SHA-1 哈希值会产生警告。更致命的是，若缺乏精确的 columns 映射（将物理表列绑定至逻辑输入 prompt/response），数据格式转换函数提取到的 dataset_attr.prompt 为 None。在哈希表寻址时，底层引发 KeyError: None 导致格式化流水线崩溃。",
+      "missing_info": [
+        "dataset_info.json 中的 columns 映射配置。",
+        "自定义 CSV 的表头字段名和一条最小样本。"
+      ],
+      "next_steps": [
+        "检查 dataset_info.json 是否为该数据集显式配置了 prompt、query、response 等列映射。",
+        "先用一条最小 CSV 样本单独跑格式转换，确认不会再出现 KeyError: None。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在大词表模型进行 Eval 验证集评估的最后阶段，程序必现 OOM，且是在 nested_concat 函数报错。",
+      "environment": "Transformers Trainer, PyTorch, Python 3.12",
+      "command": "results = trainer.predict(tokenized_data_ctx_chunks['test'])",
+      "log": "OutOfMemoryError Traceback... File /transformers/trainer.py:3580... preds_host = logits if preds_host is None else nested_concat(preds_host, logits)"
+    },
+    "output": {
+      "category": "data",
+      "severity": "high",
+      "summary": "验证循环中对全局 Logits 矩阵执行内存级物理拼接导致系统级显存溢出。",
+      "root_cause": "当 Trainer 参数 `prediction_loss_only=False` 且未开启 logits 预处理时，评估循环会将整个验证集中每一批次的完整对数几率张量 (尺寸为) 通过 nested_concat 聚合至主内存或显存中。面对大词表(如32k+)，累加的巨型浮点矩阵将瞬间越过主机物理内存与 GPU VRAM 的可用边界。",
+      "missing_info": [
+        "验证阶段所计算的具体 metric（是否严格需要获取每个 token 的完整概率分布）。"
+      ],
+      "next_steps": [
+        "确认评估指标是否真的需要保留完整 logits，能关闭时优先设置 prediction_loss_only=True 或只保留必要输出。",
+        "通过 preprocess_logits_for_metrics 或自定义 metric 逻辑在评估阶段尽早压缩 logits 张量。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "初始化 vLLM 以运行大长度上下文模型时立刻崩溃，提示 max seq len 过大。",
+      "environment": "vLLM 0.8.5.dev, RTX 3090, 24G VRAM, Llama-3.1-8b-instruct",
+      "command": "llm = LLM(model='/models/alpaca-2', max_seq_len=4096)",
+      "log": "ValueError: The model's max seq len (4096) is larger than the maximum number of tokens that can be stored in KV cache (3664)."
+    },
+    "output": {
+      "category": "inference",
+      "severity": "high",
+      "summary": "预分配的 PagedAttention 虚拟显存块表容量无法满足用户设定的逻辑序列长度阈值。",
+      "root_cause": "vLLM 的内存分析模块在初始化时会测算 GPU 剩余可用内存（总 VRAM 乘以 gpu_memory_utilization 减去模型权重占用），将其均分为固定大小的内存页（Block）。当这些页面总共能支持的 Token 上限（如 3664）低于设定的单次推理最大上下文长度要求（如 4096）时，引擎为避免在生成中途发生物理段错误，会强制发生初始阻断。",
+      "missing_info": [
+        "当前实例后台是否仍有其他常驻进程占用了部分 GPU 显存。"
+      ],
+      "next_steps": [
+        "在初始化时显著提升 `gpu_memory_utilization` 比例（例如调整至 0.95）。",
+        "显式传入更小的 `max_model_len=3664` 从而通过内存规划器校验。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "在使用 AsyncLLMEngine 异步输出大模型结果时，频繁遭遇多异步任务循环隔离错误。",
+      "environment": "vLLM 0.10.1, Python 3.9, asyncio",
+      "command": "model_config = asyncio.run(get_model_config(engine))",
+      "log": "RuntimeError: Task <Task pending... got Future <Future pending> attached to a different loop"
+    },
+    "output": {
+      "category": "inference",
+      "severity": "medium",
+      "summary": "异步推理引擎的内部监听任务池与执行器新建的临时事件循环发生上下文撕裂。",
+      "root_cause": "AsyncLLMEngine 在实例化时会探测并绑定当前的 asyncio 主事件循环，启动诸如 `outputs_queue` 的轮询监听任务。如果调用侧错误地使用了 `asyncio.run()` 进行二次封套执行，这将会在 CPython 底层创建一个全新的独立事件循环。由于 Python 的 Future 和 Queue 对象严禁跨循环边界（非线程/协程安全），内部任务在 await 旧循环的 Future 时会立刻抛出 RuntimeError 阻断请求。",
+      "missing_info": [
+        "调用方是否已经处于现有的 asyncio 事件循环中。",
+        "触发报错的最小异步脚本结构。"
+      ],
+      "next_steps": [
+        "禁止在异步脚本中使用 `asyncio.run()` 获取内部协程结果。",
+        "通过外部的 `loop.run_until_complete()` 或是将其整体整合进 FastAPI 的单一 `@app.post` 生命周期中执行。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "运行多模态 VLM 模型推理时，试图添加 BitsAndBytesConfig 实现 4-bit 量化降低显存，结果 Accelerate 报模型对象冲突异常。",
+      "environment": "PyTorch 3.10, Transformers, Accelerate",
+      "command": "vlm = AutoModelForVision2Seq.from_pretrained(MODEL_PATH, quantization_config=BitsAndBytesConfig(load_in_4bit=True))",
+      "log": "ValueError: `.to` is not supported for `4-bit` or `8-bit` bitsandbytes models. Please use the model as it is, since the model has already been set to the correct devices and casted to the correct `dtype`."
+    },
+    "output": {
+      "category": "inference",
+      "severity": "medium",
+      "summary": "Accelerate 组件的多余设备调度覆盖了 BitsAndBytes 的即时层级硬件锁定。",
+      "root_cause": "当传入 BitsAndBytesConfig 后，Transformers 模型在被 `from_pretrained` 初始化的同时，底层已经使用自定义的 `Linear4bit` 算子逐层对权重进行了不可变的 CUDA 张量实例化。若外部用户代码或 Accelerate 在构建完模型后，再次调用传统的 `model.to(device)` 进行跨设备显存拷贝分配，底层库会识别并阻断这一非法的转移行为，因为极低精度类型指针已强绑定硬件分配器。",
+      "missing_info": [
+        "验证脚本 `verify_prismatic.py` 中模型实例化后是否执行了 `.to(device)` 或 `.cuda()` 操作。"
+      ],
+      "next_steps": [
+        "在 `from_pretrained` 中利用 `device_map=\"auto\"` 全权交予框架调度资源。",
+        "全局搜索并删除业务脚本中强行修改设备挂载的 `.to(device)` 方法调用。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "使用 NIM (NVIDIA Inference Microservices) 部署 Llama 3.1 容器时，报 Cache 初始化错误，并且 max seq len 超标。",
+      "environment": "AWS g6.4xlarge, Docker, NVIDIA Container Toolkit, NIM",
+      "command": "docker run -it --rm --gpus all --shm-size=16GB... nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.2",
+      "log": "ValueError: The model's max seq len (131072) is larger than the maximum number of tokens that can be stored in KV cache (30544)."
+    },
+    "output": {
+      "category": "inference",
+      "severity": "medium",
+      "summary": "模型配置极高上下文长度而可用实例显存过于狭窄造成的硬阻断。",
+      "root_cause": "Llama 3.1 8B 默认支持高达 128k (131072) 的上下文。AWS g6.4xlarge 搭载的是单张 24GB L4 GPU。当 NIM 后台内部封装的 vLLM 引擎初始化时，模型权重和预留内存减去后，剩余可分配给 PagedAttention 的块状内存仅仅能支撑约 30544 个 token 的滑动缓存池。引擎判定这极其危险（会导致执行期崩溃），进而在 Worker 进程进行 `initialize_cache` 初始化方法时拒绝启动。",
+      "missing_info": [
+        "容器启动参数中是否显式覆盖了 max_model_len 或 gpu_memory_utilization。",
+        "实例上实际可用 GPU 显存和并发配置。"
+      ],
+      "next_steps": [
+        "降低 max_model_len，或选用更适合当前显存容量的上下文长度配置。",
+        "检查 NIM 或底层 vLLM 的显存利用率参数，避免默认配置高估可用 KV cache。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "合并微调后的 LoRA Adapter 用于准备部署，系统崩塌并报告在 Mistral 的 embed_tokens.weight 大小不符。",
+      "environment": "LlamaFactory, Mixtral, Peft",
+      "command": "model.load_adapter()",
+      "log": "RuntimeError: Error(s) in loading state_dict for MistralForCausalLM: size mismatch for model.embed_tokens.weight: copying a param with shape torch.Size() from checkpoint, the shape in current model is torch.Size()."
+    },
+    "output": {
+      "category": "deployment",
+      "severity": "medium",
+      "summary": "动态扩展词表的基座模型在反向还原加载部署时遇到了静态尺寸基座模型的维数墙。",
+      "root_cause": "在 SFT 微调期间，由于新增了特定的占位符或是系统提示符，开发者使用了 `--resize_vocab`。该命令将底层基座模型的 Token Embeddings 矩阵规模由原先的 32000 横向物理扩展到了 32064。由于 `embed_tokens` 作为 target 被封存入 Adapter，在部署挂载阶段，如果框架试图利用默认参数初始化未扩容尺寸的原始 32000 Token 的基座模型，在注入状态字典并对位参数维度时，张量尺寸产生错位继而报出严重的 size mismatch。",
+      "missing_info": [
+        "训练阶段是否使用了 resize_vocab 或新增了特殊 token。",
+        "部署时加载的基座模型词表大小是否与微调阶段一致。"
+      ],
+      "next_steps": [
+        "先使用与微调阶段相同词表大小的基座模型加载 adapter，再执行合并或导出。",
+        "如果训练时扩过词表，部署前同步 tokenizer 和 embedding 尺寸，避免直接向未扩容基座回灌权重。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "部署期间程序正常退出，但最后抛出一长串有关未销毁进程组的警告影响了整个生命周期监控脚本。",
+      "environment": "ProcessGroupNCCL.cpp, BitsAndBytes",
+      "command": "exit()",
+      "log": "Warning: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group"
+    },
+    "output": {
+      "category": "deployment",
+      "severity": "medium",
+      "summary": "分布式 C++ 通信上下文句柄被系统强杀抢占回收导致生命周期回收失败。",
+      "root_cause": "当多卡推理框架结束运行或遭遇未捕获的代码级别异常时，Python 主解释器即将退出。如果程序中未曾显式调用 `torch.distributed.destroy_process_group()` 来优雅地关闭各个节点间的环通信路，C++ 层的析构函数 `~ProcessGroupNCCL()` 会在被动销毁前发现依然有悬空的挂起连接，为避免僵尸网络端口遗留抛出严重警告。这在需要脚本自愈与拉起的流水线管道中极其阻碍自动化运维。",
+      "missing_info": [
+        "外层是否使用了 `try...finally` 异常包裹生命周期管控模型实例的清理。"
+      ],
+      "next_steps": [
+        "在推理或训练脚本退出前显式调用 torch.distributed.destroy_process_group()。",
+        "用 try...finally 包裹主流程，确保即使发生异常也能执行清理逻辑。"
+      ]
+    }
+  },
+  {
+    "instruction": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。",
+    "input": {
+      "user_question": "刚拉取 Mistral 模型并执行 vllm 聊天示例脚本准备推理，发现 HTTP 403 阻断了模型权重的全链路拉取。",
+      "environment": "vLLM, HuggingFace Hub, Mistral-7B-Instruct",
+      "command": "llm = LLM(model=model_name)",
+      "log": "Forbidden for url: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3/resolve/main/params.json"
+    },
+    "output": {
+      "category": "deployment",
+      "severity": "high",
+      "summary": "受到门控模型分发协议管制，远程下载中心拒绝未授权身份拉取配置特征流。",
+      "root_cause": "诸如 Mistral、LLaMA 等属于门控模型 (Gated Models)。当执行自动化的脚本或服务在没有任何有效的 HuggingFace CLI 登录令牌加持的情况下发起权重下载请求时，远端的授权检测服务通过校验请求头的 Bearer Token 为空或失效，返回严格的 HTTP 403 Forbidden 封禁网络数据流，从宏观层阻断了所有的执行逻辑。",
+      "missing_info": [
+        "运行该环境的服务器全局缓存 `~/.cache/huggingface/token` 是否部署正确并有访问时效。"
+      ],
+      "next_steps": [
+        "先确认目标模型是否属于 gated repo，并在当前运行用户下完成 Hugging Face 登录。",
+        "检查 HF_TOKEN 或本地缓存中的令牌是否对目标模型具备有效访问权限。"
+      ]
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[project]
+name = "llm-lab"
+version = "0.1.0"
+description = "Synthetic SFT data construction and finetuning prep for a Chinese training/deployment diagnosis assistant"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.97.0",
+    "openai>=2.32.0",
+]

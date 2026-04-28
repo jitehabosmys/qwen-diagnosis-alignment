@@ -1,0 +1,11 @@
+{
+  "diagnosis_sft_final": {
+    "file_name": "diagnosis_sft_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  }
+}

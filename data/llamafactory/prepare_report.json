@@ -1,0 +1,7 @@
+{
+  "source": "data/sft_train_final.jsonl",
+  "output_dataset": "data/llamafactory/diagnosis_sft_alpaca.json",
+  "dataset_info": "data/llamafactory/dataset_info.json",
+  "total_records": 430,
+  "format": "alpaca"
+}
