@@ -1,0 +1,290 @@
+[
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: Dataset processing fails entirely on custom JSON file reading.\n环境: LLaMA-Factory\n命令: llamafactory-cli train\n日志:\nChecksum failed: mismatched SHA-1 hash value... error occurs because dataset contains non-English characters or LATEX-formatted equations",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"文件底层的原始字节混杂摧毁了强类型映射结构的构建过程。\",\n  \"root_cause\": \"原始输入字典内混入了未经绝对斜杠转义保护处理的 LaTeX 公式系统标记符号以及无法辨认的 Unicode 特殊字符，击穿了 Arrow 固若金汤的序列化预检引擎。\",\n  \"missing_info\": [\n    \"一条最小可复现的数据样本。\",\n    \"预处理脚本或数据集配置片段。\"\n  ],\n  \"next_steps\": [\n    \"抽取一条最小样本单独跑预处理，先确认字段和编码是否符合预期。\",\n    \"对数据集做 schema、编码和长度校验，避免脏样本进入训练。\",\n    \"必要时降低并行处理数，确认问题不是由多进程放大的。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在容器里启动推理服务时，bitsandbytes 报 not compiled with GPU support，但我机器有 A10，这个怎么排查？\n环境: Docker (nvidia-container-runtime), Python 3.10, torch 2.0.1+cu118, bitsandbytes 0.39.0\n命令: python -c \"import bitsandbytes as bnb; from transformers import AutoModelForCausalLM\"\n日志:\nThe installed version of bitsandbytes was compiled without GPU support.\n8-bit optimizers and GPU quantization are unavailable.\nCUDA SETUP: WARNING! libcuda.so not found! Do you have a CUDA driver installed?",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"medium\",\n  \"summary\": \"容器内未正确暴露 GPU 驱动库或安装了 CPU 版 bitsandbytes，导致量化依赖不可用。\",\n  \"root_cause\": \"日志同时提示 libcuda.so 缺失与 GPU 支持不可用，说明运行环境的动态库与运行时挂载不完整，或当前 bitsandbytes 构建目标不含 CUDA。\",\n  \"missing_info\": [\n    \"容器启动参数（是否包含 --gpus all）与 nvidia-smi 在容器内输出。\",\n    \"pip show bitsandbytes 与安装来源（wheel 版本）。\",\n    \"容器内 ls /usr/lib*/libcuda.so* 与 ldconfig -p | grep libcuda 结果。\"\n  ],\n  \"next_steps\": [\n    \"先在容器内执行 nvidia-smi，确认 GPU 与驱动已透传。\",\n    \"检查并补齐容器运行参数（如 docker run --gpus all）及 nvidia-container-toolkit 配置。\",\n    \"重装与 CUDA 版本匹配的 bitsandbytes 发行版，避免误装 CPU-only 变体。\",\n    \"执行 python -m bitsandbytes 进行自检并根据输出修正库路径后再启动服务。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 部署多卡推理服务后，程序正常退出但日志显示进程组未销毁警告，监控系统报告资源泄漏。\n环境: TensorFlow Serving with Horovod, NVIDIA V100 GPUs\n命令: horovodrun -np 4 inference.py; exit\n日志:\nWarning: ProcessGroup not destroyed. Please call horovod.shutdown() before exiting.",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"high\",\n  \"summary\": \"Horovod 分布式进程组在推理服务退出时未被正确关闭，导致资源泄漏警告和监控问题。\",\n  \"root_cause\": \"当使用 Horovod 进行分布式推理时，如果程序退出前未调用 horovod.shutdown() 或类似清理函数，底层通信组会残留，触发警告并可能影响后续服务启动。\",\n  \"missing_info\": [\n    \"Horovod 版本和配置细节？\",\n    \"监控脚本的具体错误信息？\"\n  ],\n  \"next_steps\": [\n    \"在推理脚本中调用 horovod.shutdown() 确保清理。\",\n    \"更新部署脚本以捕获并处理此类警告。\",\n    \"检查 Horovod 文档中的最佳实践。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在做QLoRA训练，刚执行训练命令就报 ModuleNotFoundError: triton.runtime，怎么处理比较稳妥？\n环境: CUDA 12.1, torch 2.1.0, peft 0.10.0, transformers 4.38.2, bitsandbytes 0.43.0, triton 2.0.0\n命令: python -m torch.distributed.run --nproc_per_node=4 train_qlora.py --use_4bit true\n日志:\nfrom bitsandbytes.triton.dequantize_rowwise import dequantize_rowwise\nfrom triton.runtime import driver\nModuleNotFoundError: No module named 'triton.runtime'\n[rank0]: RuntimeError: Failed to import transformers.integrations.bitsandbytes",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"QLoRA 训练在 4bit 相关依赖加载时失败，触发 Triton runtime 模块不存在错误。\",\n  \"root_cause\": \"日志表明 bitsandbytes 的 Triton 子模块依赖未被满足，通常由 Triton 版本偏旧或与当前 torch/cuda 组合不兼容引起，进而导致 transformers 的 bitsandbytes 集成初始化失败。\",\n  \"missing_info\": [\n    \"是否在该环境中手动指定过 triton 版本或从源码安装。\",\n    \"`pip show triton bitsandbytes transformers torch` 的版本与安装路径信息。\",\n    \"操作系统与驱动版本，及是否使用容器镜像。\"\n  ],\n  \"next_steps\": [\n    \"根据项目文档选择一组已验证的 torch-cuda-triton-bitsandbytes 组合，并在新环境一次性安装。\",\n    \"先在单卡模式运行最小 QLoRA 脚本确认依赖可导入，再切换到多卡分布式。\",\n    \"若必须保持当前 torch 版本，优先查找对应兼容的 bitsandbytes/triton 发行版本而非盲目升级全部包。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: I only changed one thing: upgraded pydantic for a FastAPI endpoint. Now my single-GPU training script fails before start.\n环境: Windows 11, conda env, Python 3.9.19, CUDA 12.1, torch 2.1.2, transformers 4.43.3, fastapi 0.114.0, pydantic 2.8.2\n命令: python train.py --model_name bert-base-uncased --batch_size 8\n日志:\nTraceback (most recent call last):\n  File \"train.py\", line 3, in <module>\n    from transformers import AutoModelForSequenceClassification, Trainer\n  File \".../site-packages/transformers/__init__.py\", line 27, in <module>\n    from .utils import logging\nImportError: cannot import name 'BaseSettings' from 'pydantic' (.../site-packages/pydantic/__init__.py)",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"训练在入口导入阶段失败，显示 Pydantic 相关符号无法导入，属于依赖层阻断问题。\",\n  \"root_cause\": \"升级到 Pydantic v2 后，历史接口位置/可用性发生变化，而当前依赖链中仍有组件按旧方式导入 `BaseSettings`，导致启动即崩溃。\",\n  \"missing_info\": [\n    \"哪个具体包在导入 `BaseSettings`（完整 traceback 下游栈）。\",\n    \"是否安装了 `pydantic-settings` 以及其版本。\",\n    \"conda 与 pip 是否混装同一包，是否存在多份 pydantic 安装。\",\n    \"升级前后 `pip freeze` 差异。\"\n  ],\n  \"next_steps\": [\n    \"执行 `pip show pydantic pydantic-settings fastapi transformers`，核对版本与安装位置是否一致。\",\n    \"若需快速恢复训练，可先回滚到已知可用依赖快照；若保持 Pydantic v2，则补齐并升级相关依赖到 v2 兼容版本。\",\n    \"将训练与服务拆分为独立虚拟环境（train/serve），分别锁定依赖，避免一次升级同时影响两条链路。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 部署 8B 模型时还没发请求就失败，提示 max seq len 大于 KV cache，可怎么改？\n环境: vLLM 0.8.6, Ubuntu 22.04, RTX 4090 24G, Llama-3-8B-Instruct FP16\n命令: python -m vllm.entrypoints.openai.api_server --model /data/llama3-8b --max-model-len 16384 --gpu-memory-utilization 0.92\n日志:\nEngine init failed: model_max_length 16384 > max_tokens_in_kv_cache 6144.",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"high\",\n  \"summary\": \"服务初始化阶段的 KV cache 可承载 token 数明显不足以支持配置的 16k 上下文。\",\n  \"root_cause\": \"在单卡 24G 场景下，模型权重与运行时缓冲占用后，剩余显存只能分配出约 6144 token 的 KV cache。配置的 max-model-len=16384 超过该上限，vLLM 在启动检查时直接拒绝启动。\",\n  \"missing_info\": [\n    \"模型实际 dtype/量化方式是否与预期一致（可能影响权重占用）。\",\n    \"启动参数中是否还有影响显存的并发或预填充相关配置。\"\n  ],\n  \"next_steps\": [\n    \"将 `--max-model-len` 调整到不高于当前可用上限（例如先设为 6144）确认服务可用。\",\n    \"检查并固定模型加载精度/量化配置，减少权重显存占用后再尝试提高上下文长度。\",\n    \"在空闲 GPU 环境下重启服务并重新观察 `max_tokens_in_kv_cache` 变化。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: Training fails because dataset JSON has mismatched field types.\n环境: LLaMA-Factory\n命令: llamafactory-cli train --config train_config.yaml\n日志:\nKeyError: 'text' not found in dataset schema. Expected string but got int for field 'label'.",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"medium\",\n  \"summary\": \"数据集字段类型与模型期望不匹配。\",\n  \"root_cause\": \"JSON 数据中的字段类型错误，例如 'label' 字段应为字符串但提供了整数，导致 schema 验证失败。\",\n  \"missing_info\": [\n    \"数据集 schema 定义文件。\",\n    \"一条包含错误字段的数据样本。\"\n  ],\n  \"next_steps\": [\n    \"检查数据集配置文件中的 schema 定义，确认字段类型。\",\n    \"随机抽样几条数据，验证字段类型是否一致。\",\n    \"修正数据预处理脚本，确保类型转换正确。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 同一套代码在别的模型能跑，到 Gemma 指令模型就报 chat_template 相关错误，哪里不兼容？\n环境: CUDA 12.1, torch 2.3.1, transformers 5.3.0, vLLM offline preprocessing script\n命令: prompt = tok.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)\n日志:\nValueError: Cannot use chat template functions because tokenizer.chat_template is not set and no template argument was passed.",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"预处理阶段依赖 chat_template，但当前 tokenizer 未提供模板字段。\",\n  \"root_cause\": \"代码假设所有模型都会在 tokenizer 元数据中内置模板；对部分新模型该假设不成立，模板可能独立存放或未被当前加载逻辑读取。\",\n  \"missing_info\": [\n    \"使用的模型具体 revision/commit，是否与可用模板文件一致。\",\n    \"当前 `AutoTokenizer.from_pretrained` 是否启用了 `trust_remote_code` 及本地缓存是否完整。\"\n  ],\n  \"next_steps\": [\n    \"打印并检查 `tokenizer.chat_template` 是否为空，确认问题点在模板缺失而非消息格式。\",\n    \"在模型仓库中定位模板文件并手动加载到 tokenizer。\",\n    \"将模板加载逻辑固化到预处理脚本中，避免模型切换时再次触发同类错误。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: Training crashes with CUDA out of memory error after a few epochs.\n环境: PyTorch 2.0.1, Transformers 4.35.0, NVIDIA RTX 3090\n命令: python train.py --batch_size 32\n日志:\nRuntimeError: CUDA out of memory. Tried to allocate 2.00 GiB (GPU 0; 24.00 GiB total capacity)",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"medium\",\n  \"summary\": \"训练批次大小过大导致 GPU 内存溢出。\",\n  \"root_cause\": \"批次大小设置超过了可用 GPU 内存容量，导致在反向传播时内存分配失败。\",\n  \"missing_info\": [\n    \"当前 GPU 内存使用情况和峰值使用率。\",\n    \"是否有其他进程占用 GPU 内存。\"\n  ],\n  \"next_steps\": [\n    \"减少批次大小或使用梯度累积。\",\n    \"监控 GPU 内存使用，使用 nvidia-smi 检查。\",\n    \"考虑使用混合精度训练以减少内存占用。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: Memory error when increasing batch size during training, despite GPU showing available memory.\n环境: PyTorch 2.0\n命令: optimizer.step()\n日志:\nRuntimeError: CUDA out of memory. Tried to allocate 2.50 GiB (GPU 0; 16.00 GiB total capacity; 10.20 GiB already allocated; 2.80 GiB free; 12.50 GiB reserved)",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"high\",\n  \"summary\": \"训练过程中 batch size 增加时显存分配失败，尽管 GPU 显示有可用内存。\",\n  \"root_cause\": \"优化器状态与梯度累积导致显存碎片化，动态 batch size 变化使保留内存池无法及时回收。\",\n  \"missing_info\": [\n    \"训练脚本中 batch size 调整的具体逻辑。\",\n    \"GPU 驱动版本和 CUDA 版本信息。\"\n  ],\n  \"next_steps\": [\n    \"设置 torch.cuda.max_split_size_mb 为较小值（如 128）以减少内存碎片。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 训练命令能启动，但一直停在“Converting format”后半段，控制台无报错。这个属于数据问题吗？\n环境: LLaMA-Factory 0.9.5, Python 3.11, single RTX 4090\n命令: llamafactory-cli train configs/llama3_sft.yaml\n日志:\nLoading dataset...\nConverting format of dataset (num_proc=20): 97%|█████████▋| 291034/300000 [22:18<00:40, 220.0 examples/s]\nConverting format of dataset (num_proc=20): 100%|██████████| 300000/300000 [23:01<00:00, 217.2 examples/s]\n[stuck, no 'Start training' message]",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"数据转换达到 100% 后未进入训练，属于数据处理链路的阻塞症状。\",\n  \"root_cause\": \"num_proc 设置较高且未见后续训练日志，较可能在多进程结果汇总、序列化或缓存提交阶段发生长时间等待；当前证据不足以判断为代码崩溃，更像流程未完成。\",\n  \"missing_info\": [\n    \"数据源格式（json/jsonl/parquet）及是否包含超长样本或异常字段。\",\n    \"预处理阶段内存占用峰值与 OOM/kill 记录（dmesg）。\",\n    \"是否在容器或远程挂载目录执行（I/O 延迟情况）。\"\n  ],\n  \"next_steps\": [\n    \"将 num_proc 从 20 下调到 2~4，观察是否能稳定越过转换阶段。\",\n    \"先做离线数据清洗与长度裁剪，去除异常大样本后再训练。\",\n    \"将数据与缓存目录迁移到低延迟本地盘，并开启更详细日志级别复现。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 日志显示训练流程跑完了，但 save_dir 里没有 checkpoint，也没有 tokenizer 文件，这通常是哪里出问题？\n环境: LLaMA-Factory 0.9.x, 单卡 RTX 4090, 自定义 ShareGPT JSON\n命令: llamafactory-cli train --stage sft --model_name_or_path Qwen/Qwen2-1.5B-Instruct --dataset_dir ./datasets --dataset my_sft --template qwen --output_dir ./save_dir\n日志:\n[INFO] loaded 1287 samples\n[WARNING] 1287 samples are invalid after formatting, ignored.\n[INFO] Num train samples = 0\n[INFO] Training finished successfully.",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"训练流程结束但无产物，关键信号是有效样本数为 0，属于数据在预处理阶段被全部过滤。\",\n  \"root_cause\": \"数据字段与所选 template 的期望结构不匹配，导致样本在格式化/校验时全部判定无效，训练实际未执行有效 step，因此没有可保存的 checkpoint。\",\n  \"missing_info\": [\n    \"my_sft 在 dataset_info.json 中的 columns 映射配置。\",\n    \"原始 JSON 中前 3 条样本的完整结构（含 role/content 或 instruction/input/output 字段）。\",\n    \"训练参数里是否启用了 max_samples 或 data_filter 相关限制。\"\n  ],\n  \"next_steps\": [\n    \"先执行一次仅数据检查流程（不启动训练），确认 valid sample 数量大于 0。\",\n    \"核对 template 与数据格式是否一致；若是 ShareGPT 格式，确认 messages 列表与 role/content 键完整。\",\n    \"抽样打印被过滤样本的原因统计（缺字段、空文本、超长截断后为空等），针对性修正后再训练。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: vLLM 服务一启动就报上下文长度不支持，我没开始发请求就退出了，怎么处理？\n环境: vLLM 0.8.4, CUDA 12.1, PyTorch 2.2, 单卡 A10 24GB, 模型 Qwen2.5-7B-Instruct\n命令: python -m vllm.entrypoints.openai.api_server --model /data/models/qwen2.5-7b-instruct --max-model-len 8192 --gpu-memory-utilization 0.9\n日志:\nERROR engine.py: ValueError: The model's max seq len (8192) is larger than the maximum number of tokens that can be stored in KV cache (7424).",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"high\",\n  \"summary\": \"引擎初始化阶段的 KV cache 容量不足，无法满足配置的最大上下文长度，服务被提前拦截退出。\",\n  \"root_cause\": \"vLLM 在启动时根据可分配显存和块大小预先计算 KV cache 可容纳 token 总量。当前显存预算下上限约为 7424 token，而命令行要求 8192，超过规划容量，因此触发校验失败并终止启动。\",\n  \"missing_info\": [\n    \"启动时 nvidia-smi 显示的实际剩余显存和是否有其他进程占用。\",\n    \"是否启用了量化或其他会改变权重显存占用的参数（如 --quantization）。\"\n  ],\n  \"next_steps\": [\n    \"先将 --max-model-len 下调到不高于日志给出的 7424（可先设 7168 留余量）验证服务可启动。\",\n    \"如必须维持 8192，上调 --gpu-memory-utilization（例如 0.95）并清理同卡其他显存占用后重试。\",\n    \"记录一次完整启动日志和 nvidia-smi 快照，确认容量变化是否符合预期。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在 Windows 10 本地运行训练脚本时，bitsandbytes 报告 CUDA 初始化失败\n环境: Windows 10, CUDA 11.8, bitsandbytes 0.38.0, PyTorch 2.0.0\n命令: python train.py --model resnet\n日志:\nRuntimeError: CUDA initialization: The NVIDIA driver on your system is too old (version: 512.78)",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"NVIDIA 驱动版本过低，无法支持 bitsandbytes 所需的 CUDA 运行时。\",\n  \"root_cause\": \"bitsandbytes 依赖的 CUDA 工具包要求较新的驱动版本，但系统安装的驱动版本 512.78 不满足最低要求。\",\n  \"missing_info\": [\n    \"CUDA 工具包的完整安装路径\",\n    \"bitsandbytes 的具体安装方式（pip 或 conda）\"\n  ],\n  \"next_steps\": [\n    \"更新 NVIDIA 驱动到最新稳定版本\",\n    \"验证 CUDA 工具包与驱动版本的兼容性\",\n    \"在干净环境中重新安装依赖并测试\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在机器上跑文本生成 API，服务进程还没起来就在导入阶段报错，说某个多模态模型类不存在。这是环境问题吗？\n环境: python3.10, transformers + uvicorn, 单机 CPU\n命令: python -m transformers.commands.serve --model gpt2\n日志:\nRuntimeError: Failed to import transformers.pipelines because of the following error:\nImportError: cannot import name 'Qwen2VLForConditionalGeneration' from 'transformers' (/opt/venv/lib/python3.10/site-packages/transformers/__init__.py)",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"low\",\n  \"summary\": \"服务启动时在模块导入链路触发了缺失符号错误，属于依赖/版本不匹配导致的提前失败。\",\n  \"root_cause\": \"当前 transformers 安装版本与其内部引用的模型类集合不一致，CLI/serve 入口在初始化时加载了相关模块，进而暴露出不存在的导出符号。\",\n  \"missing_info\": [\n    \"transformers 的准确版本号与安装来源（pip/源码）。\",\n    \"是否同时安装了多个 transformers 副本（系统 Python 与虚拟环境冲突）。\"\n  ],\n  \"next_steps\": [\n    \"执行 `python -c \\\"import transformers; print(transformers.__version__, transformers.__file__)\\\"` 确认实际加载版本与路径。\",\n    \"在干净虚拟环境中重装：`pip uninstall -y transformers && pip install -U transformers`。\",\n    \"若需要多模态支持，补充安装额外依赖（如 `pip install \\\"transformers[vision]\\\"`）后重试服务启动。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 同一套推理代码，有的请求能返回，有的请求直接报 sequence 太长。这个算模型问题还是数据问题？\n环境: FastAPI + transformers pipeline(text-generation), CUDA 11.8\n命令: pipe(prompt, max_new_tokens=128, return_full_text=False)\n日志:\nValueError: Token indices sequence length is longer than the specified maximum sequence length for this model (1307 > 1024). Running this sequence through the model will result in indexing errors.",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"medium\",\n  \"summary\": \"故障与请求内容长度相关，属于输入分布不受控导致的长度越界风险。\",\n  \"root_cause\": \"在线请求未做统一长度治理，部分 prompt 在分词后超过模型上下文上限，引发索引错误提示。\",\n  \"missing_info\": [\n    \"线上请求长度分布（字符数与token数）统计。\",\n    \"服务端是否有输入长度校验与截断逻辑。\",\n    \"是否拼接了系统提示词/历史对话导致总长度膨胀。\"\n  ],\n  \"next_steps\": [\n    \"在服务入口增加 token 级长度校验，超限请求返回可读错误或自动截断。\",\n    \"把系统提示词、检索片段、用户输入分别计长并设置预算。\",\n    \"增加监控：记录每次请求 token 长度与是否触发 truncation。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在做 dev set 打分，最后收集预测时内存直接冲满，报错点在 transformers 的 nested_concat，这一般是哪里配置不当？\n环境: Debian 12, PyTorch 2.1, Transformers Trainer, 单卡 A10 24GB\n命令: metrics = trainer.predict(dev_ds, metric_key_prefix=\"dev\")\n日志:\nOutOfMemoryError: CUDA out of memory\n.../transformers/trainer.py: \"preds_host = logits if preds_host is None else nested_concat(preds_host, logits)\"\n.../transformers/trainer_pt_utils.py: nested_concat",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"评估阶段默认保留并拼接每个 batch 的 logits，导致预测输出缓存过大并触发 OOM。\",\n  \"root_cause\": \"报错行明确指向 nested_concat，表明内存压力来自“结果累积”而不是单次推理。对大词表任务，完整 logits 缓存成本极高，尤其在 dev 集较大或序列较长时更容易在末段崩溃。\",\n  \"missing_info\": [\n    \"当前是否需要基于完整概率分布计算复杂指标（如 calibration/entropy 类指标）。\",\n    \"是否配置了 preprocess_logits_for_metrics，及其返回张量形状。\"\n  ],\n  \"next_steps\": [\n    \"先验证是否能仅输出 loss 或离散预测结果，减少 logits 存储需求。\",\n    \"若必须计算指标，改写 preprocess_logits_for_metrics 只返回必要字段并尽早降维。\",\n    \"将评估集拆分多次 predict 后再汇总指标，避免单次运行持有全部中间结果。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在部署 vLLM 服务时，拉取模型权重失败，日志显示权限不足。\n环境: vLLM, HuggingFace Hub, Phi-2\n命令: llm = LLM(model='microsoft/phi-2')\n日志:\n403 Client Error: Forbidden for url: https://huggingface.co/microsoft/phi-2/resolve/main/pytorch_model.bin",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"medium\",\n  \"summary\": \"模型权重下载被远程服务器拒绝，可能由于认证问题。\",\n  \"root_cause\": \"Phi-2 模型可能属于受控分发，需要特定访问权限。当前请求缺少有效的认证令牌。\",\n  \"missing_info\": [\n    \"用户的 HuggingFace 账户是否已申请并获得模型访问权限。\"\n  ],\n  \"next_steps\": [\n    \"检查 HuggingFace 模型页面，确认访问要求。\",\n    \"确保登录令牌具有所需权限后重试。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在本地使用 Docker 部署 Llama 3.1 8B 时，容器启动报错，提示 KV cache 初始化失败。\n环境: Local workstation, NVIDIA RTX 3090 (24GB), Docker 24.0, NVIDIA Container Toolkit 1.14\n命令: docker run -it --rm --gpus all --shm-size=8GB nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.2\n日志:\nRuntimeError: Failed to initialize KV cache: The model's max seq len (131072) exceeds available memory for cache (28672 tokens).",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"模型默认上下文长度与本地 GPU 显存不匹配导致 KV cache 初始化失败。\",\n  \"root_cause\": \"Llama 3.1 8B 默认 max seq len 为 131072，而 RTX 3090 的 24GB 显存在分配模型权重后，剩余内存仅能支持约 28672 个 token 的 KV cache，引擎在初始化时检测到不足并报错。\",\n  \"missing_info\": [\n    \"是否在启动命令中设置了 --max-model-len 参数\",\n    \"本地 GPU 的实际可用显存和并发配置\"\n  ],\n  \"next_steps\": [\n    \"在 docker run 命令中添加 --max-model-len 参数，设置为较小的值如 8192\",\n    \"检查本地 GPU 驱动和 CUDA 版本是否兼容\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: My script works with plain `python train.py`, but `accelerate launch --multi_gpu` just quits with no error text.\n环境: Docker (nvidia/cuda:11.6.2-cudnn8-runtime), Python 3.9, accelerate 0.20.1, torch 1.11.0\n命令: accelerate launch --multi_gpu --num_processes 2 train.py\n日志:\nLaunching training...\n[rank0]: terminated\n[rank1]: terminated\nSegmentation fault (core dumped)",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"单卡可运行但多卡封装启动即段错误，指向分布式依赖栈兼容性问题。\",\n  \"root_cause\": \"accelerate 多卡路径会触发 torch.distributed 相关底层流程；在旧版本 torch 或不完全匹配的依赖组合下，可能在 C/C++ 层崩溃，表现为 silent/segfault 而非可读异常。\",\n  \"missing_info\": [\n    \"镜像内 CUDA 运行时与安装的 torch CUDA build 是否完全对应。\",\n    \"是否安装了额外分布式相关库（如 mpi/openib/nccl 变体）及其版本。\",\n    \"core dump 或 `dmesg` 中与 python 进程崩溃相关的系统日志。\"\n  ],\n  \"next_steps\": [\n    \"优先在干净虚拟环境中安装官方匹配 wheel（torch、torchvision、torchaudio、accelerate）进行最小复现。\",\n    \"升级 torch 至较新稳定版本并与 accelerate 对齐，避免旧接口组合。\",\n    \"先用 `--num_processes 1` 验证 accelerate 基本启动，再逐步切换到多进程定位问题边界。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: Data processing hangs during parallel loading of large JSON dataset.\n环境: LLaMA-Factory\n命令: llamafactory-cli train --num_workers 4\n日志:\nProcess stuck at data loading with no error output. Memory usage increases steadily.",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"并行数据加载过程中死锁或内存溢出导致进程挂起。\",\n  \"root_cause\": \"多进程环境下，数据加载器可能因文件 I/O 竞争或内存管理问题而阻塞。\",\n  \"missing_info\": [\n    \"系统资源监控数据（如内存、CPU 使用率）。\",\n    \"数据集文件大小和结构信息。\"\n  ],\n  \"next_steps\": [\n    \"减少并行 worker 数量到 1，测试是否正常加载。\",\n    \"使用单进程调试模式，添加日志跟踪加载步骤。\",\n    \"检查系统日志是否有 OOM（内存不足）错误。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 运行训练脚本时，numpy 报错提示版本不兼容，脚本无法执行。\n环境: numpy 1.24.0, pandas 2.0.0, PyTorch 1.12.0, Python 3.9\n命令: python train.py\n日志:\nAttributeError: module 'numpy' has no attribute 'bool'",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"medium\",\n  \"summary\": \"numpy 1.24 移除了旧版 API，与 pandas 或其他依赖不兼容，导致运行时错误。\",\n  \"root_cause\": \"numpy 1.24 中废弃了 np.bool 等别名，而 pandas 2.0.0 或用户代码可能仍使用这些别名，引发 AttributeError。\",\n  \"missing_info\": [\n    \"完整的 traceback 日志，显示错误发生的具体位置。\",\n    \"requirements.txt 文件内容或依赖版本列表。\",\n    \"是否使用了特定版本的 pandas 或其他库。\"\n  ],\n  \"next_steps\": [\n    \"降级 numpy 到兼容版本，如 pip install numpy==1.23.5。\",\n    \"更新 pandas 或其他依赖到支持新 numpy 的版本，检查兼容性。\",\n    \"审查代码中是否直接使用了 numpy 废弃的 API，如 np.bool，并替换为 Python 原生类型。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在微调 GPT-2 时，训练突然停止，显示 CUDA out of memory，但 nvidia-smi 显示还有 4GB 空闲显存。\n环境: GPT-2 finetune, PyTorch 2.0, single NVIDIA RTX 3090\n命令: trainer = Trainer(model=model, args=training_args); trainer.train()\n日志:\nRuntimeError: CUDA out of memory. Tried to allocate 2.00 GiB (GPU 0; 24.00 GiB total capacity; 18.50 GiB already allocated; 2.00 GiB free; 19.00 GiB reserved in total by PyTorch)",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"medium\",\n  \"summary\": \"PyTorch 显存分配器在尝试分配大块内存时失败，尽管总空闲显存足够。\",\n  \"root_cause\": \"可能是由于显存碎片化或内存泄漏，导致无法找到连续的内存块。\",\n  \"missing_info\": [\n    \"训练时的 batch size 和 gradient accumulation steps 设置。\",\n    \"是否使用了混合精度训练。\"\n  ],\n  \"next_steps\": [\n    \"检查训练参数，尝试减小 batch size。\",\n    \"启用 PyTorch 的显存调试工具，如 torch.cuda.memory_summary()。\",\n    \"确认是否有不必要的张量保留在计算图中。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在 WSL2 里编译 bitsandbytes，日志说找不到 nvcc，但 CUDA 明明装过，这是不是依赖没配好？\n环境: Windows 11 + WSL2 Ubuntu 20.04, Python 3.11, CUDA runtime present\n命令: make cuda11x\n日志:\nmake: nvcc: No such file or directory\nCUDA SETUP: WARNING! CUDA runtime files found, but compiler not found.",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"medium\",\n  \"summary\": \"环境中存在 CUDA 运行时但缺少编译器工具链，导致源码构建命令无法执行。\",\n  \"root_cause\": \"当前 Linux 子系统未安装或未暴露 CUDA toolkit 的 nvcc，可运行但不可编译，属于构建依赖不完整。\",\n  \"missing_info\": [\n    \"which nvcc 的输出。\",\n    \"是否仅安装了 CUDA runtime 而非完整 toolkit。\",\n    \"PATH 中是否包含 CUDA bin 目录。\"\n  ],\n  \"next_steps\": [\n    \"先执行 which nvcc 和 nvcc --version 确认编译器可用性。\",\n    \"若不存在 nvcc，安装与目标版本匹配的 CUDA toolkit。\",\n    \"将 /usr/local/cuda/bin 加入 PATH，并重新加载 shell 配置。\",\n    \"重新运行 make 命令前，确认 bitsandbytes 目标 CUDA 版本与本机 toolkit 一致。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 单机8卡用 deepspeed 启动后，初始化阶段就挂了，提示找不到 triton.runtime.driver，这是不是依赖冲突？\n环境: Python 3.10, torch 2.1.2+cu121, deepspeed 0.13.5, transformers 4.39.3, bitsandbytes 0.43.1, triton 2.0.0\n命令: deepspeed --num_gpus 8 finetune.py --deepspeed ds_config.json\n日志:\nFile \".../bitsandbytes/triton/int8_matmul_mixed_dequantize.py\", line 12, in <module> from triton.runtime import driver\nModuleNotFoundError: No module named 'triton.runtime'\nDuring handling of the above exception, another exception occurred:\nRuntimeError: Failed to import transformers.integrations.bitsandbytes",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"训练流程在导入 bitsandbytes Triton 内核时失败，核心表现为 triton.runtime 模块缺失。\",\n  \"root_cause\": \"当前环境中的 Triton 版本与 bitsandbytes/transformers 期望的 API 不一致。日志显示依赖链在导入 triton.runtime.driver 时中断，属于典型的版本组合不兼容问题。\",\n  \"missing_info\": [\n    \"pip freeze 或 conda list 的完整依赖清单。\",\n    \"是否存在多个 Python 环境或用户目录下的残留 triton 包。\",\n    \"项目要求的官方版本矩阵（torch/cuda/triton/bitsandbytes）。\"\n  ],\n  \"next_steps\": [\n    \"在全新虚拟环境中按官方推荐版本重装 torch、transformers、bitsandbytes、triton，避免增量升级。\",\n    \"执行 `python -c \\\"import triton, bitsandbytes, transformers; print(triton.__version__)\\\"` 验证基础导入是否通过。\",\n    \"若使用 deepspeed/accelerate，先用单进程最小脚本验证依赖，再切回多卡启动。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在 FastAPI 里接入 vLLM 的 AsyncLLMEngine，请求一多就报事件循环相关错误，这种一般怎么定位？\n环境: Ubuntu 22.04, Python 3.10, FastAPI 0.110, uvicorn 0.29, vLLM 0.10.0\n命令: async def startup():\n    engine = AsyncLLMEngine.from_engine_args(args)\n\n@app.post('/generate')\nasync def generate(req: Req):\n    cfg = asyncio.run(engine.get_model_config())\n    return {'max_len': cfg.max_model_len}\n日志:\nRuntimeError: Task pending name='Task-57' coro=<AsyncLLMEngine._engine_loop()> got Future <Future pending> attached to a different loop",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"服务已在运行事件循环中处理请求，但又用 asyncio.run 包裹引擎协程，触发跨事件循环 Future 绑定冲突。\",\n  \"root_cause\": \"AsyncLLMEngine 创建时会在当前 loop 上启动后台任务。FastAPI/uvicorn 本身已提供活动 loop；在路由函数内再次调用 asyncio.run 会新建并关闭临时 loop，导致引擎内部 Future/Queue 仍绑定旧 loop，请求侧 await 新 loop 对象时出现 different loop 错误。\",\n  \"missing_info\": [\n    \"engine 是在 startup 阶段初始化还是每次请求内初始化。\",\n    \"是否开启了 uvicorn --workers>1 或 reload，导致多进程/多生命周期差异。\"\n  ],\n  \"next_steps\": [\n    \"把 `asyncio.run(engine.get_model_config())` 改为 `await engine.get_model_config()`。\",\n    \"确保 AsyncLLMEngine 与调用它的协程都在同一个应用生命周期和同一个事件循环中。\",\n    \"若需启动前预取配置，在 FastAPI startup 钩子中直接 await，不要嵌套 run。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 为什么我在做对话推理时一开 assistant mask 就报模板解析异常？\n环境: Python 3.10, transformers 4.44.2, tokenizer from local Qwen2.5-Instruct snapshot\n命令: tok.apply_chat_template(chat_messages, tokenize=False, return_assistant_tokens_mask=True)\n日志:\njinja2.exceptions.TemplateSyntaxError: Encountered unknown tag 'generation' at line 18 while compiling chat template",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"启用 assistant token mask 时，模板中的 Jinja 标签与当前实现预期不匹配，导致模板编译失败。\",\n  \"root_cause\": \"在 `return_assistant_tokens_mask=True` 路径下，transformers 会依赖 chat template 中特定生成块语义；当前加载的模板不符合该语义（或标签写法不被当前版本解析），因此在 Jinja 编译阶段直接报错。\",\n  \"missing_info\": [\n    \"当前 tokenizer.chat_template 的完整文本内容。\",\n    \"chat_messages 的具体结构（role/content 字段是否规范）。\",\n    \"模型与 tokenizer 是否来自同一版本快照。\"\n  ],\n  \"next_steps\": [\n    \"先将 `return_assistant_tokens_mask=False` 验证主流程可用性。\",\n    \"打印并检查 `tokenizer.chat_template`，确认是否包含与当前 transformers 版本兼容的生成块语法。\",\n    \"优先改用模型仓库官方提供、与当前版本 transformers 对齐的 chat template。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 模型能加载，但 API 服务刚起来就报 KV cache 分配失败，这种怎么处理？\n环境: Python 3.10, CUDA 12.1, PyTorch 2.4.0, vLLM 0.6.4, 单卡 RTX 4090 24GB\n命令: python -m vllm.entrypoints.openai.api_server --model /models/llama-13b --dtype float16 --gpu-memory-utilization 0.82 --max-model-len 8192\n日志:\nERROR engine.py: ValueError: No available memory for the cache blocks. Increase gpu_memory_utilization or reduce max_model_len.",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"high\",\n  \"summary\": \"服务启动阶段可用显存不足，导致 KV cache block 无法创建。\",\n  \"root_cause\": \"当前配置下模型权重、运行时开销和上下文长度共同挤占显存，vLLM 在初始化时估算到可分配给 KV cache 的空间接近 0，因此引擎初始化失败。\",\n  \"missing_info\": [\n    \"启动时 nvidia-smi 的显存占用快照（含是否有其他进程占卡）。\",\n    \"模型精度/量化方式是否为 FP16/BF16/INT4。\",\n    \"是否设置了 tensor-parallel-size 或其他并行参数。\"\n  ],\n  \"next_steps\": [\n    \"先将 --max-model-len 下调到 4096 或更低后重试，验证是否由上下文长度引起。\",\n    \"将 --gpu-memory-utilization 提升到 0.9~0.95 区间逐步测试稳定值。\",\n    \"若仍失败，改用量化权重（如 AWQ/GPTQ）或更小模型规格。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我在 Win11 的 WSL2 里训练 QLoRA，import bitsandbytes 就直接崩溃，提示 compiled without GPU support，该怎么判断是包问题还是环境问题？\n环境: Windows 11, WSL2 Debian, Python 3.11, torch 2.2.1+cu118, bitsandbytes 0.37.2\n命令: python -c \"import bitsandbytes as bnb; print(bnb.__version__)\"\n日志:\nUserWarning: The installed version of bitsandbytes was compiled without GPU support.\nRuntimeError: CUDA Setup failed. Please run python -m bitsandbytes",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"当前 bitsandbytes 安装体可能未启用 GPU 支持，且 CUDA 初始化未通过。\",\n  \"root_cause\": \"日志同时出现“compiled without GPU support”和 CUDA setup failed，说明已安装 wheel 与当前平台/版本组合不匹配，或安装时回退到了 CPU 变体。\",\n  \"missing_info\": [\n    \"pip show bitsandbytes 与安装来源（镜像、私有源、离线包）。\",\n    \"python -m bitsandbytes 完整检测输出。\",\n    \"当前 Python 与 PyTorch 的确切 build 标签（如 cu118/cu121）。\"\n  ],\n  \"next_steps\": [\n    \"卸载并在干净环境重新安装与 PyTorch CUDA 版本匹配的 bitsandbytes 发行包。\",\n    \"安装后立即执行 python -m bitsandbytes 验证是否识别到 GPU 后端。\",\n    \"如官方未覆盖该 Python/CUDA 组合，暂时回退到文档中明确支持的版本矩阵。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 加载 GPTQ/4bit 模型初始化阶段失败，堆栈里是 transformers 的 bitsandbytes 集成文件里找不到 torch。\n环境: Ubuntu 22.04, CUDA 12.1, torch 2.2.0+cu121, transformers 4.35.0.dev0, bitsandbytes 0.42.0\n命令: AutoModelForCausalLM.from_pretrained('Qwen/Qwen1.5-14B-Chat', quantization_config=bnb_config, trust_remote_code=True)\n日志:\nNameError: name 'torch' is not defined\n  File \".../site-packages/transformers/integrations/bitsandbytes.py\", line 340, in dequantize_bnb_weight\n    def dequantize_bnb_weight(weight: torch.nn.Parameter, state=None):",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"medium\",\n  \"summary\": \"报错发生在 transformers 与 bitsandbytes 集成层，属于版本实现细节导致的符号解析失败。\",\n  \"root_cause\": \"使用了开发版/特定版本 transformers 时，量化集成模块在某些导入路径下未提前绑定 torch，导致函数签名中的类型引用在解释时失败。\",\n  \"missing_info\": [\n    \"是否使用了 dev/nightly 包，以及安装来源（pip、源码 editable）。\",\n    \"完整 traceback 上下文，确认触发点是否固定在 integrations/bitsandbytes.py。\",\n    \"quantization_config 的具体参数（4bit/8bit、compute dtype、double quant 等）。\"\n  ],\n  \"next_steps\": [\n    \"避免使用 dev 版，切换到官方稳定版 transformers，并与 bitsandbytes 使用常见可用组合。\",\n    \"在最小脚本中仅保留模型加载逻辑并显式 `import torch`，验证是否仍复现。\",\n    \"若必须保留当前版本，临时回退 transformers 到已知稳定版本并记录可复现条件。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在部署 vLLM 时，CUDA Graph 捕获阶段出现显存不足错误。\n环境: vLLM 0.2.0, 16GB VRAM, CUDA 11.8\n命令: python -m vllm.entrypoints.openai.api_server --model meta-llama/Llama-2-7b --gpu-memory-utilization 0.9\n日志:\nCUDA Graph capturing failed: OutOfMemoryError. Attempted to allocate 2.5 GiB, but only 1.2 GiB available.",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"high\",\n  \"summary\": \"CUDA Graph 捕获所需的显存超过了可用显存，导致初始化失败。\",\n  \"root_cause\": \"vLLM 在启动时会预分配显存用于 CUDA Graph 以优化推理性能，但在 16GB 显卡上，如果模型权重和 KV Cache 占用过多，可能没有足够空间。\",\n  \"missing_info\": [\n    \"vLLM 的具体版本和 CUDA 版本。\",\n    \"模型大小和 batch size 设置。\"\n  ],\n  \"next_steps\": [\n    \"检查 vLLM 和 CUDA 的兼容性，确保版本匹配。\",\n    \"降低 gpu_memory_utilization 参数值，如设为 0.8。\",\n    \"使用 nvidia-smi 监控显存使用，确认是否有其他进程占用。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 模型刚开始训练就挂，提示 a 和 b 的维度差了几十倍，使用的是 ZeRO-3 + CPU offload。是不是参数聚合有问题？\n环境: DeepSpeed ZeRO-3 with CPU optimizer offload, 4xA100, AdamW\n命令: python -m torch.distributed.run --nproc_per_node=4 finetune.py --deepspeed conf/zero3_offload.json\n日志:\nRuntimeError: The size of tensor a (6291456) must match the size of tensor b (201326592) at non-singleton dimension 0\n  File \".../torch/optim/adamw.py\", line 221, in _single_tensor_adamw",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"high\",\n  \"summary\": \"AdamW 更新时输入张量形状不一致，表现为 ZeRO-3 分片张量与全量张量混用。\",\n  \"root_cause\": \"报错栈在 AdamW 单张量更新路径，且尺寸呈典型“分片 vs 全量”关系，说明参数、梯度或动量状态在某一步未保持一致的分片/还原状态，导致更新计算失败。\",\n  \"missing_info\": [\n    \"zero3_offload 配置全文，特别是 optimizer/state 的 offload 选项。\",\n    \"是否启用了梯度裁剪、梯度累积及其步数设置。\",\n    \"训练是否混用了自定义 optimizer hook 或参数重映射逻辑。\"\n  ],\n  \"next_steps\": [\n    \"先在相同脚本下关闭 offload 做最小复现，确认是否与 offload 路径相关。\",\n    \"检查 optimizer state 初始化和加载流程，确保没有加载到不匹配并行拓扑的状态。\",\n    \"在报错前打印关键参数组的 numel 与 partition 信息，核对每组是否一致。\",\n    \"若近期升级过 DeepSpeed/PyTorch，回退到已验证版本进行对比。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 多机训练跑一会儿就不动了，大概在 step 120 左右，之后被系统杀掉，怎么定位？\n环境: 2 nodes x 8 GPUs, PyTorch DDP + DeepSpeed ZeRO-2, NCCL backend\n命令: torchrun --nnodes=2 --nproc_per_node=8 --node_rank=$RANK train.py --deepspeed ds_config.json\n日志:\n[E ProcessGroupNCCL.cpp:828] [Rank 11] Watchdog timeout on collective: ALLREDUCE, seq=9127, elapsed=900321 ms; some ranks are still waiting",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"high\",\n  \"summary\": \"分布式训练在 ALLREDUCE 阶段出现长时间等待，最终触发 NCCL 看门狗超时并终止任务。\",\n  \"root_cause\": \"更可能是部分 rank 未按时进入同一轮通信（如数据加载抖动、某 rank 前向/反向明显变慢、节点网络瞬时异常），导致通信组失步而非单纯算子错误。\",\n  \"missing_info\": [\n    \"各 rank 的最后 200 行日志及最早报错 rank。\",\n    \"数据加载配置（num_workers、pin_memory、是否远程存储）和 CPU/IO 利用率。\",\n    \"NCCL 相关环境变量与网络拓扑（网卡、IB/RoCE 配置）。\"\n  ],\n  \"next_steps\": [\n    \"先按 rank 分日志聚合，确认第一个卡住的 rank 和对应 step。\",\n    \"开启更详细分布式调试信息（如 NCCL_DEBUG=INFO、TORCH_DISTRIBUTED_DEBUG=DETAIL）后小规模复现。\",\n    \"将 batch size 降低并临时关闭复杂数据增强，观察是否仍在同类 step 超时。\",\n    \"做节点间连通性与带宽自检（如 nccl-tests），排除网络链路不稳定。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 线上推理服务在拼 prompt 阶段崩了，日志指向 jinja。是不是 transformers 版本的问题？\n环境: CUDA 12.1, torch 2.3.1, transformers 4.46.0, jinja2 3.1.4\n命令: inputs = tokenizer.apply_chat_template(msgs, add_generation_prompt=True, return_dict=True, return_assistant_tokens_mask=True)\n日志:\nTemplateSyntaxError: expected token 'end of statement block', got 'generation' at line 18 in chat_template; raised from transformers/tokenization_utils_base.py apply_chat_template",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"错误发生在 chat template 的 Jinja 语法解析阶段，与推理前模板渲染配置有关。\",\n  \"root_cause\": \"开启 assistant mask 返回时，模板需要满足特定 Jinja 块结构。当前模板在 generation 相关语句附近语法不合法或不被当前实现接受，因此在编译模板时直接抛出语法错误。\",\n  \"missing_info\": [\n    \"报错对应的模板第 18 行上下文片段。\",\n    \"是否对 `tokenizer.chat_template` 做过运行时覆盖。\",\n    \"同一模型在 `return_assistant_tokens_mask=False` 下是否能正常执行。\"\n  ],\n  \"next_steps\": [\n    \"先用 `return_assistant_tokens_mask=False` 作为临时规避，恢复服务可用性。\",\n    \"打印并检查当前生效的 `tokenizer.chat_template`，定位报错行并修正语法。\",\n    \"锁定已验证可用的 transformers 与模板版本组合，避免线上混用不同模板实现。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 安装 xformers 一直从源码编译然后报 CUDA 版本不满足，这种怎么处理？\n环境: Ubuntu 20.04, Python 3.10, PyTorch 2.1.0+cu118, nvcc 11.3\n命令: pip install xformers==0.0.23\n日志:\nERROR: Detected CUDA toolkit 11.3. xFormers requires CUDA >= 11.6 for this build path.",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"本机 CUDA toolkit 版本低于扩展编译要求，导致依赖无法构建安装。\",\n  \"root_cause\": \"当前环境使用的 nvcc/toolkit 为 11.3，未达到该版本 xformers 所需的最低 CUDA 版本门槛，编译流程被直接拒绝。\",\n  \"missing_info\": [\n    \"是否必须从源码编译，还是可以接受与当前 PyTorch 匹配的预编译 wheel。\",\n    \"nvidia-smi 显示的驱动版本以及可支持的最高 CUDA runtime 版本。\"\n  ],\n  \"next_steps\": [\n    \"先确认 xformers 与当前 PyTorch 版本的官方兼容矩阵，优先选择对应预编译包。\",\n    \"若必须源码编译，升级到满足要求的 CUDA toolkit（>=11.6）并重新创建虚拟环境安装。\",\n    \"执行 `python -c \\\"import torch; print(torch.version.cuda)\\\"` 与 `nvcc -V` 对齐运行时和编译时版本。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我从源码编译 bitsandbytes，编译器提示找不到 cudart，GPU 明明可用。\n环境: Ubuntu 20.04, Conda Python 3.9, CUDA 11.7, A100 单卡训练节点\n命令: CUDA_HOME=/usr/local/cuda-11.7 python -m pip install -e .\n日志:\n/usr/bin/ld: cannot find -lcudart\ncollect2: error: ld returned 1 exit status\nerror: command 'gcc' failed with exit code 1",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"链接阶段出现 -lcudart 缺失，导致 bitsandbytes 源码安装中断。\",\n  \"root_cause\": \"编译器链接参数依赖 CUDA runtime，但当前库搜索路径或软链接配置不完整，导致 ld 无法解析 libcudart。\",\n  \"missing_info\": [\n    \"/usr/local/cuda-11.7/lib64 目录下是否存在 libcudart.so 及其软链接。\",\n    \"安装时完整的编译输出（含前后 50 行）。\",\n    \"是否在 conda 环境内覆盖了系统 GCC/LD 路径。\"\n  ],\n  \"next_steps\": [\n    \"检查 CUDA lib64 目录中 libcudart.so* 文件是否齐全，必要时修复软链接。\",\n    \"在安装前显式导出 LIBRARY_PATH 与 LD_LIBRARY_PATH 指向 CUDA lib64。\",\n    \"重新执行安装并保留完整 verbose 日志以确认是否进入下一依赖报错。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 用 vLLM 在单卡机器上启动 OpenAI 兼容服务，模型下载阶段直接报 403，服务起不来，这种一般怎么定位？\n环境: Python 3.10, vLLM 0.5.x, CUDA 12.1, HuggingFace Hub, single GPU RTX 4090\n命令: python -m vllm.entrypoints.openai.api_server --model mistralai/Mistral-7B-Instruct-v0.3 --dtype float16\n日志:\nrequests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3/resolve/main/config.json",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"high\",\n  \"summary\": \"服务启动时需要在线拉取模型文件，但访问 HuggingFace 仓库被 403 拒绝，导致部署链路中断。\",\n  \"root_cause\": \"目标模型仓库很可能处于受限访问（gated）状态，当前进程未携带可用令牌，或令牌未获该仓库权限，因此 Hub 在文件解析阶段返回 Forbidden。\",\n  \"missing_info\": [\n    \"当前运行用户是否已执行 `huggingface-cli login`，以及令牌是否在该用户上下文可见。\",\n    \"该 HuggingFace 账号是否已在网页端同意并获得该模型仓库访问授权。\"\n  ],\n  \"next_steps\": [\n    \"在启动服务的同一账号下执行 `huggingface-cli whoami`，确认登录态有效。\",\n    \"到模型页面检查 gated 访问是否已批准，并重新生成具备读取权限的 token。\",\n    \"将 token 通过 `HF_TOKEN` 注入服务进程后重试启动，避免使用错误用户的本地缓存。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 线上文本生成接口偶发报越界，但不是每次都复现，可能和输入长度有关吗？\n环境: Python 3.10, PyTorch 2.1, transformers 4.39, 单卡 T4, FastAPI 推理服务\n命令: outputs = model.generate(**tokenizer(prompt, return_tensors='pt').to(device), max_new_tokens=256)\n日志:\nUserWarning: Token indices sequence length is longer than the specified maximum sequence length for this model (589 > 512). This sequence may cause indexing errors. Traceback ... IndexError: index out of range in self",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"medium\",\n  \"summary\": \"部分请求的输入 token 长度超过模型可支持的最大位置长度，导致生成阶段出现位置索引越界。\",\n  \"root_cause\": \"推理前未对输入做统一长度约束，某些长 prompt 在进入模型时已超出 max_position_embeddings（如 512），后续 attention/position indexing 触发报错。\",\n  \"missing_info\": [\n    \"出错请求的原始 prompt 与对应 tokenized 长度统计。\",\n    \"tokenizer 调用是否显式设置 truncation、max_length。\",\n    \"模型 config 中 max_position_embeddings 与 generation 参数完整配置。\"\n  ],\n  \"next_steps\": [\n    \"在 tokenizer 侧开启 truncation=True，并设置与模型一致的 max_length 上限。\",\n    \"在服务入口增加输入长度校验与告警日志，记录超过阈值的请求样本。\",\n    \"将 max_new_tokens 与输入长度联动限制，避免总长度继续超界。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我们在 CI 上做模型预热，`from_pretrained` 一直 403，怀疑不是网络问题。这个报错能判断成权限类故障吗？\n环境: CI runner, Python 3.11, transformers 4.42, huggingface_hub 0.23, no interactive login\n命令: AutoModelForCausalLM.from_pretrained('mistralai/Mistral-7B-Instruct-v0.3')\n日志:\nOSError: There was a specific connection error when trying to load mistralai/Mistral-7B-Instruct-v0.3:\n403 Forbidden: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3/resolve/main/model.safetensors.index.json",
+    "output": "{\n  \"category\": \"deployment\",\n  \"severity\": \"high\",\n  \"summary\": \"CI 预热阶段访问模型文件返回 403，更符合鉴权/授权失败，而非普通连通性异常。\",\n  \"root_cause\": \"CI 环境通常无交互式登录，若未显式注入 HuggingFace 访问令牌，或令牌权限不足，访问 gated 模型时会在文件索引请求阶段被拒绝。\",\n  \"missing_info\": [\n    \"CI secret 中配置的 token 是否存在、是否过期、是否具备 read 权限。\",\n    \"流水线执行账号是否已在 HuggingFace 侧完成该模型的访问申请与协议确认。\"\n  ],\n  \"next_steps\": [\n    \"在 CI 脚本中显式导出 `HF_TOKEN`，并打印 `huggingface-cli whoami` 进行最小化校验。\",\n    \"使用同一 token 通过 `huggingface_hub` 访问一个公开仓库与目标仓库，区分凭据错误和仓库授权不足。\",\n    \"如为 gated 限制，先在网页完成访问审批，再重新触发 CI 任务。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: flash-attn from source keeps crashing during build on my single machine. Is this a RAM issue or toolchain issue?\n环境: Ubuntu 22.04, 64 vCPU, 192GB RAM, Python 3.10, CUDA 11.8, torch 2.1.0+cu118\n命令: MAX_JOBS=64 pip install flash-attn==2.5.7 --no-build-isolation -v\n日志:\nc++: fatal error: Killed signal terminated program cc1plus\nninja: build stopped: subcommand failed.\nERROR: Failed building wheel for flash-attn",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"high\",\n  \"summary\": \"编译 flash-attn 时出现编译进程被系统杀死，表现与高并发构建导致内存压力过大一致。\",\n  \"root_cause\": \"从日志看 cc1plus 被 Killed，常见于 OOM 场景；同时 MAX_JOBS=64 会放大 C++/CUDA 模板编译的瞬时内存占用，导致 ninja 子任务失败。\",\n  \"missing_info\": [\n    \"构建失败时的系统内存与 swap 使用情况（如 dmesg、free -h）。\",\n    \"gcc/g++、ninja、setuptools、wheel 的具体版本。\",\n    \"是否在容器中构建以及容器的 memory limit 配置。\"\n  ],\n  \"next_steps\": [\n    \"将并发数降到保守值重试（如 MAX_JOBS=4 或 8）。\",\n    \"构建前后记录 dmesg 与内存监控，确认是否触发 OOM killer。\",\n    \"优先安装与当前 torch+cuda 匹配的预编译 wheel，避免本地全量编译。\",\n    \"若必须源码安装，使用干净虚拟环境并固定官方建议的编译工具链版本。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 多卡训练跑到几百个 step 后不动了，最后报 NCCL 的 broadcast 超时，这种一般先看哪里？\n环境: PyTorch 2.2.1, DeepSpeed 0.13.5, CUDA 12.1, 4x RTX 4090\n命令: deepspeed --num_gpus=4 run_sft.py --deepspeed ds_zero2.json --per_device_train_batch_size 2\n日志:\n[rank2]: [E ProcessGroupNCCL.cpp:607] [Rank 2] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=918, OpType=BROADCAST, Timeout(ms)=300000) ran for 300145 milliseconds before timing out.",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"high\",\n  \"summary\": \"训练过程中出现分布式集合通信超时，表现为某个 rank 在 collective 上长时间等待后被 watchdog 终止。\",\n  \"root_cause\": \"当前证据更像是多卡间执行进度不一致或某一 rank 卡顿导致的通信不同步，而不是单一代码行可直接定位的问题；可能涉及数据批次耗时尖峰、I/O 抖动、进程异常或通信链路不稳定。\",\n  \"missing_info\": [\n    \"各 rank 在超时前最后一次成功 step 的日志时间戳是否一致。\",\n    \"是否启用了梯度检查点、offload 或较重的数据预处理导致单 rank 明显慢于其他 rank。\",\n    \"NCCL_DEBUG=INFO 下是否有某个 rank 先出现连接重试、IB/Socket 警告。\"\n  ],\n  \"next_steps\": [\n    \"先开启按 rank 分文件日志并保留超时前后 200 行，确认最先停住的是哪个 rank。\",\n    \"将 num_workers 降到 0~2、关闭复杂数据增强，观察是否仍在相近 step 超时。\",\n    \"用单卡与双卡分别复现；若单卡稳定、双卡异常，再重点检查 NCCL 与节点/PCIe 拓扑连通性。\",\n    \"临时减小 batch 或序列长度，排除偶发超长 step 触发通信等待放大。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 我们在单卡A100做4bit推理，启动阶段直接在 bitsandbytes integration 抛 `name 'torch' is not defined`，需要先改代码还是先换版本？\n环境: A100 40GB 单卡, Python 3.11, torch 2.1.0, transformers 4.33.3, bitsandbytes 0.41.0, text-generation-inference 自定义脚本加载\n命令: python serve.py --model_name_or_path mistralai/Mistral-7B-Instruct-v0.2 --load_in_4bit\n日志:\nERROR:model_loader: failed to init model\nTraceback (most recent call last):\n  File \"serve.py\", line 72, in load_model\n    model = AutoModelForCausalLM.from_pretrained(...)\n  File \".../transformers/integrations/bitsandbytes.py\", line 33x, in <module>\n    def dequantize_bnb_weight(weight: torch.nn.Parameter, ...):\nNameError: name 'torch' is not defined",
+    "output": "{\n  \"category\": \"dependency\",\n  \"severity\": \"medium\",\n  \"summary\": \"这是典型的量化依赖链版本问题，优先级高于业务代码修改。\",\n  \"root_cause\": \"当前环境中的 transformers 旧版本在 bitsandbytes 集成实现上存在 torch 引用作用域缺失，4bit 加载会命中该路径并在函数定义/解析时失败。\",\n  \"missing_info\": [\n    \"serve.py 中是否显式 `import torch`，以及导入顺序。\",\n    \"模型加载参数是否包含 `quantization_config` 等自定义配置。\",\n    \"当前镜像或 requirements.txt 的精确版本锁定内容。\"\n  ],\n  \"next_steps\": [\n    \"短期先在入口文件顶部显式 `import torch`，验证是否能恢复服务启动。\",\n    \"中期将 transformers 升级到与 torch/bitsandbytes 兼容的较新版本，并在预发环境回归 4bit 加载。\",\n    \"将可用版本组合写入 requirements 锁文件，避免后续自动升级再次触发同类故障。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: I encounter OOM during model training with PyTorch.\n环境: PyTorch 2.0, GPU 8GB\n命令: model.train()\n日志:\nRuntimeError: CUDA out of memory. Tried to allocate 2.80 GiB (GPU 0; 7.80 GiB total capacity; 1.50 GiB already allocated; 2.80 GiB free; 3.50 GiB reserved in total by PyTorch)",
+    "output": "{\n  \"category\": \"training\",\n  \"severity\": \"high\",\n  \"summary\": \"训练过程中显存分配失败，可用内存不足以支持模型前向传播。\",\n  \"root_cause\": \"模型架构或输入尺寸导致显存需求超过 GPU 物理容量。\",\n  \"missing_info\": [\n    \"模型的参数量和输入批次大小？\",\n    \"是否启用了显存优化技术如梯度累积？\"\n  ],\n  \"next_steps\": [\n    \"减小 batch size 或使用更小的模型架构。\",\n    \"检查是否有不必要的显存占用，如日志或调试输出。\",\n    \"考虑使用 CPU 卸载或分布式训练。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在推理时，apply_chat_template 函数抛出 Jinja2 错误，提示语法问题\n环境: transformers 4.45.0, Qwen2 Chat Template (自定义版本)\n命令: tokenizer.apply_chat_template(messages, return_assistant_tokens_mask=True, add_generation_prompt=False)\n日志:\nJinja2.exceptions.TemplateSyntaxError: line 5: unexpected end of template",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"high\",\n  \"summary\": \"自定义 Jinja 模板中存在语法错误，导致编译失败。\",\n  \"root_cause\": \"用户自定义的 chat template 在第5行有语法错误，当启用 return_assistant_tokens_mask 时，代码尝试编译模板并发现不完整结构。\",\n  \"missing_info\": [\n    \"自定义 chat template 的完整字符串。\",\n    \"messages 列表的示例内容。\"\n  ],\n  \"next_steps\": [\n    \"检查并修正自定义模板的语法错误。\",\n    \"临时使用官方标准模板进行测试。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 在 Azure NC6s_v3 上部署 Llama 3.1 时，NIM 容器启动失败，提示 KV cache 大小不足。\n环境: Azure NC6s_v3, Docker, NVIDIA Container Toolkit, NIM\n命令: docker run -d --gpus all --shm-size=8GB nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.2\n日志:\nRuntimeError: KV cache allocation failed. Requested 131072 tokens, but only 24576 available.",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"medium\",\n  \"summary\": \"部署大上下文模型时，GPU 显存不足以支持默认的 KV cache 配置。\",\n  \"root_cause\": \"Llama 3.1 8B 的默认 max seq len 为 131072，但 Azure NC6s_v3 的 16GB V100 GPU 在分配模型权重后，剩余显存仅能容纳约 24576 个 token 的 KV cache。NIM 的 vLLM 引擎在初始化时检测到不匹配并抛出错误。\",\n  \"missing_info\": [\n    \"是否通过环境变量或命令行参数设置了 max_model_len。\",\n    \"实例上是否有其他进程占用 GPU 显存。\"\n  ],\n  \"next_steps\": [\n    \"显式设置 max_model_len 为较小值，如 8192 或 16384。\",\n    \"监控 GPU 显存使用情况，确保没有其他服务竞争资源。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 微调刚开始就报 shape mismatch，日志提示 labels 比 input 多了几个 token。我只改了数据 collator。\n环境: Transformers Trainer + DataCollatorForSeq2Seq, CUDA single card\n命令: trainer.train()\n日志:\nRuntimeError: The size of tensor a (1024) must match tensor b (1032) at non-singleton dimension 1",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"batch 组装阶段把 labels pad 到了不同长度策略，导致与 input_ids 在序列维度不匹配。\",\n  \"root_cause\": \"自定义或替换后的 collator 对 input_ids 与 labels 使用了不一致的 padding/truncation 规则，训练前向计算时无法逐 token 对齐。\",\n  \"missing_info\": [\n    \"当前 collator 的实现代码或关键参数（padding、max_length、label_pad_token_id）。\",\n    \"tokenizer 的 truncation_side、padding_side 以及模型最大长度配置。\"\n  ],\n  \"next_steps\": [\n    \"统一在同一 collator 中对 input_ids 和 labels 使用相同的 max_length 与 padding 策略。\",\n    \"将 label_pad_token_id 设为 -100，并确认 pad 操作发生在截断之后而非之前。\",\n    \"先用一个小 batch 执行 `next(iter(train_dataloader))` 打印各字段 shape，验证一致后再恢复训练。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 多卡微调到一半挂掉，报 latin-1/utf-8 相关 decode 错误。看起来像某条数据有问题，但我不确定是不是 tokenizer 导致的。\n环境: LLaMA-Factory + PEFT LoRA, 2xRTX 4090, CUDA 12.1\n命令: llamafactory-cli train configs/lora_sft.yaml\n日志:\nFile \"json_dataset.py\", line 57, in parse_example\n  text = raw_bytes.decode('utf-8')\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 1024: unexpected end of data\n[rank0] terminated with exit code 1\n[rank1] still running, no progress for 20 min",
+    "output": "{\n  \"category\": \"data\",\n  \"severity\": \"high\",\n  \"summary\": \"样本解码失败更可能是数据编码/截断问题，而非模型或 tokenizer 逻辑本身，导致多卡任务部分退出后停滞。\",\n  \"root_cause\": \"数据管道在将原始字节转文本时遇到不完整或非 UTF-8 编码内容（例如文件截断、混合编码），触发 UnicodeDecodeError。分布式训练中一个 rank 异常退出，另一个 rank 无法完成同步步骤而表现为卡住。\",\n  \"missing_info\": [\n    \"出错样本是否来自特定文件或特定语言语料。\",\n    \"数据生成链路（抓取、清洗、导出）是否可能产生截断行。\",\n    \"tokenizer 前后的原始字段示例与字节长度信息。\"\n  ],\n  \"next_steps\": [\n    \"先在训练前运行独立数据体检脚本：逐行 decode、JSON 解析、字段长度检查并输出坏样本清单。\",\n    \"对可疑文件重新导出为统一 UTF-8（无损校验行数和哈希），避免混合编码输入。\",\n    \"将异常样本隔离后重跑短程训练，验证是否仍在同位置失败。\",\n    \"补充分布式失败联动退出配置，减少单 rank 崩溃后的长时间等待。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  },
+  {
+    "instruction": "请阅读下面的用户问题、环境、命令和日志，输出诊断结果 JSON。",
+    "input": "用户问题: 使用 Mistral-7B 模型，即使调整了 gpu_memory_utilization，仍然报 max seq len 错误。\n环境: vLLM 0.8.4, RTX 3090, 24G VRAM, Mistral-7B-v0.1\n命令: llm = LLM(model='mistralai/Mistral-7B-v0.1', max_seq_len=4096, gpu_memory_utilization=0.9)\n日志:\nValueError: The model's max seq len (4096) is larger than the maximum number of tokens that can be stored in KV cache (3200).",
+    "output": "{\n  \"category\": \"inference\",\n  \"severity\": \"high\",\n  \"summary\": \"预分配的 PagedAttention 虚拟显存块表容量无法满足用户设定的逻辑序列长度阈值，即使调整了内存利用率。\",\n  \"root_cause\": \"vLLM 的内存分析模块在初始化时会测算 GPU 剩余可用内存（总 VRAM 乘以 gpu_memory_utilization 减去模型权重占用），将其均分为固定大小的内存页（Block）。当这些页面总共能支持的 Token 上限（如 3200）低于设定的单次推理最大上下文长度要求（如 4096）时，引擎为避免在生成中途发生物理段错误，会强制发生初始阻断。\",\n  \"missing_info\": [\n    \"gpu_memory_utilization 参数的实际生效值。\",\n    \"模型权重占用的显存大小。\"\n  ],\n  \"next_steps\": [\n    \"降低 max_model_len 至 KV cache 支持的上限（如 3200）。\",\n    \"检查是否有其他进程占用显存，或进一步增加 gpu_memory_utilization。\"\n  ]\n}",
+    "system": "你是一个训练与部署问题诊断助手。请根据输入内容输出 JSON。"
+  }
+]

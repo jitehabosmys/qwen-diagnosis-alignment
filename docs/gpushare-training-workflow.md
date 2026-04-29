@@ -258,6 +258,10 @@ cp /hy-tmp/llm-lab/data/llamafactory/dataset_info.json data/dataset_info.json
 
 ## 11. 第一次训练建议
 
+如果你已经完成 LLaMA-Factory 安装，并准备在 `5060 Ti 16GB` 上直接开跑，详细执行方案见：
+
+- [gpushare-5060ti-sft-playbook.md](/hy-tmp/llm-lab/docs/gpushare-5060ti-sft-playbook.md)
+
 ### 11.1 先做 smoke test
 
 不要一上来就跑完整训练。  

@@ -1,0 +1,12 @@
+{
+  "source": "data/llamafactory/diagnosis_sft_alpaca.json",
+  "seed": 42,
+  "total_records": 430,
+  "train_count": 382,
+  "eval_count": 48,
+  "smoke_count": 32,
+  "train_dataset": "data/llamafactory/diagnosis_sft_train_alpaca.json",
+  "eval_dataset": "data/llamafactory/diagnosis_sft_eval_alpaca.json",
+  "smoke_dataset": "data/llamafactory/diagnosis_sft_smoke_alpaca.json",
+  "note": "smoke split is a subset of the train split"
+}

@@ -7,5 +7,32 @@
       "response": "output",
       "system": "system"
     }
+  },
+  "diagnosis_sft_smoke": {
+    "file_name": "diagnosis_sft_smoke_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "diagnosis_sft_train": {
+    "file_name": "diagnosis_sft_train_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "diagnosis_sft_eval": {
+    "file_name": "diagnosis_sft_eval_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
   }
 }

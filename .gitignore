@@ -22,3 +22,10 @@ data/archive/
 
 # Runtime caches
 .pytest_cache/
+
+# Logs
+logs/
+
+# Editor
+.vscode/
+
