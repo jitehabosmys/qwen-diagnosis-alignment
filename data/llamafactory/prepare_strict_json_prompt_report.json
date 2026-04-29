@@ -1,0 +1,27 @@
+{
+  "prompt_variant": "strict_json_prompt",
+  "system_prompt": "你是一个训练与部署问题诊断助手。你的输出必须是严格合法的 JSON 对象。不要输出 Markdown，不要输出代码块，不要输出任何额外解释。",
+  "instruction": "请阅读下面的用户问题、环境、命令和日志。只输出一个严格合法的 JSON 对象，不要添加任何额外文本。JSON 顶层必须且只能包含以下字段：category, severity, summary, root_cause, missing_info, next_steps。其中 category 只能是 dependency、training、data、inference、deployment 之一；severity 只能是 low、medium、high 之一；missing_info 和 next_steps 必须是非空数组。",
+  "datasets": {
+    "full": {
+      "source": "data/llamafactory/diagnosis_sft_alpaca.json",
+      "output": "data/llamafactory/diagnosis_sft_strict_json_prompt_alpaca.json",
+      "count": 430
+    },
+    "train": {
+      "source": "data/llamafactory/diagnosis_sft_train_alpaca.json",
+      "output": "data/llamafactory/diagnosis_sft_strict_json_prompt_train_alpaca.json",
+      "count": 382
+    },
+    "eval": {
+      "source": "data/llamafactory/diagnosis_sft_eval_alpaca.json",
+      "output": "data/llamafactory/diagnosis_sft_strict_json_prompt_eval_alpaca.json",
+      "count": 48
+    },
+    "smoke": {
+      "source": "data/llamafactory/diagnosis_sft_smoke_alpaca.json",
+      "output": "data/llamafactory/diagnosis_sft_strict_json_prompt_smoke_alpaca.json",
+      "count": 32
+    }
+  }
+}

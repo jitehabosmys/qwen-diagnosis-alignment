@@ -1,0 +1,50 @@
+### model
+model_name_or_path: Qwen/Qwen2.5-0.5B-Instruct
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target: all
+
+### dataset
+dataset: diagnosis_sft_strict_json_prompt_train
+eval_dataset: diagnosis_sft_strict_json_prompt_eval
+dataset_dir: /hy-tmp/llm-lab/data/llamafactory
+template: qwen
+cutoff_len: 1536
+overwrite_cache: true
+preprocessing_num_workers: 4
+dataloader_num_workers: 0
+
+### output
+output_dir: /hy-tmp/outputs/llamafactory/qwen25-05b-full-lora-sft-strict-json-prompt
+logging_steps: 5
+save_steps: 25
+plot_loss: true
+overwrite_output_dir: true
+save_total_limit: 3
+save_only_model: false
+report_to: wandb
+run_name: qwen25-05b-full-lora-sft-strict-json-prompt-5060ti
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_steps: 4
+bf16: true
+ddp_timeout: 180000000
+
+### eval
+do_eval: true
+per_device_eval_batch_size: 1
+eval_strategy: steps
+eval_steps: 25

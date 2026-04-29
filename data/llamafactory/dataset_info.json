@@ -34,5 +34,41 @@
       "response": "output",
       "system": "system"
     }
+  },
+  "diagnosis_sft_strict_json_prompt_full": {
+    "file_name": "diagnosis_sft_strict_json_prompt_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "diagnosis_sft_strict_json_prompt_train": {
+    "file_name": "diagnosis_sft_strict_json_prompt_train_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "diagnosis_sft_strict_json_prompt_eval": {
+    "file_name": "diagnosis_sft_strict_json_prompt_eval_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "diagnosis_sft_strict_json_prompt_smoke": {
+    "file_name": "diagnosis_sft_strict_json_prompt_smoke_alpaca.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
   }
 }

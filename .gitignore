@@ -29,3 +29,6 @@ logs/
 # Editor
 .vscode/
 
+# Local copied evaluation outputs
+20*/
+tmp.md
