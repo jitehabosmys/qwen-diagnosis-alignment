@@ -21,8 +21,14 @@
 - [qwen25_05b_full_lora_hf_infer.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_05b_full_lora_hf_infer.yaml)
 - [qwen25_3b_base_hf_infer.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_3b_base_hf_infer.yaml)
 - [qwen25_3b_full_lora_hf_infer.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_3b_full_lora_hf_infer.yaml)
+- [qwen3_4b_base_hf_infer.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen3_4b_base_hf_infer.yaml)
+- [qwen3_4b_full_lora_hf_infer.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen3_4b_full_lora_hf_infer.yaml)
 - [qwen25_05b_base_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_05b_base_hf_infer_strict_json_prompt.yaml)
 - [qwen25_05b_full_lora_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_05b_full_lora_hf_infer_strict_json_prompt.yaml)
+- [qwen25_3b_base_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_3b_base_hf_infer_strict_json_prompt.yaml)
+- [qwen25_3b_full_lora_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen25_3b_full_lora_hf_infer_strict_json_prompt.yaml)
+- [qwen3_4b_base_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen3_4b_base_hf_infer_strict_json_prompt.yaml)
+- [qwen3_4b_full_lora_hf_infer_strict_json_prompt.yaml](/hy-tmp/llm-lab/configs/llamafactory/qwen3_4b_full_lora_hf_infer_strict_json_prompt.yaml)
 
 评测脚本：
 
@@ -102,6 +108,33 @@ export USE_MODELSCOPE_HUB=1
 python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen25_3b_default_prompt --max-samples 10
 ```
 
+如果要跑 `Qwen2.5-3B` 的 strict prompt base/lora 矩阵：
+
+```bash
+cd /hy-tmp/LLaMA-Factory
+source .venv/bin/activate
+export USE_MODELSCOPE_HUB=1
+python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen25_3b_strict_json_prompt --max-samples 10
+```
+
+如果要跑 `Qwen3-4B` 的默认 prompt base/lora 矩阵：
+
+```bash
+cd /hy-tmp/LLaMA-Factory
+source .venv/bin/activate
+export USE_MODELSCOPE_HUB=1
+python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen3_4b_default_prompt --max-samples 10
+```
+
+如果要跑 `Qwen3-4B` 的 strict prompt base/lora 矩阵：
+
+```bash
+cd /hy-tmp/LLaMA-Factory
+source .venv/bin/activate
+export USE_MODELSCOPE_HUB=1
+python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen3_4b_strict_json_prompt --max-samples 10
+```
+
 ## 4. 输出内容
 
 输出目录中会包含：
@@ -116,6 +149,10 @@ python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen25_3b_default_
 - `variant`
 - `prompt`
 - `raw_output`
+- `response_length`
+- `prompt_length`
+- `finish_reason`
+- `elapsed_seconds`
 - `reference_output`
 - `metrics`
 
@@ -140,6 +177,28 @@ python /hy-tmp/llm-lab/scripts/run_inference_eval.py --matrix qwen25_3b_default_
 - `severity_matches_reference`
 
 这些不是最终效果结论，但很适合做第一轮探针。
+
+## 5.1 生成过程统计
+
+当前脚本还会额外记录一些生成过程相关字段：
+
+- `response_length`
+- `prompt_length`
+- `finish_reason`
+- `elapsed_seconds`
+
+并在 `summary.json` 里汇总：
+
+- `response_length_avg`
+- `prompt_length_avg`
+- `elapsed_seconds_avg`
+- `finish_reason_counts`
+
+这组统计很适合用来观察：
+
+- base 是否更容易生成更长、更拖尾的输出
+- LoRA 是否因为更快命中目标格式而更早结束
+- 更大模型的推理时间增长到底来自模型计算，还是来自生成长度变化
 
 ## 6. 人工检查建议
 

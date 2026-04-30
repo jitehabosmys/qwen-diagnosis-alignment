@@ -1,0 +1,51 @@
+### model
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target: all
+
+### dataset
+dataset: diagnosis_sft_smoke
+eval_dataset: diagnosis_sft_eval
+dataset_dir: /hy-tmp/llm-lab/data/llamafactory
+template: qwen3_nothink
+cutoff_len: 1024
+max_samples: 32
+overwrite_cache: true
+preprocessing_num_workers: 4
+dataloader_num_workers: 0
+
+### output
+output_dir: /hy-tmp/outputs/llamafactory/qwen3-4b-smoke-lora-sft-5090ti
+logging_steps: 1
+save_steps: 20
+plot_loss: true
+overwrite_output_dir: true
+save_total_limit: 2
+save_only_model: false
+report_to: wandb
+run_name: qwen3-4b-smoke-lora-sft-5090ti
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+max_steps: 40
+lr_scheduler_type: cosine
+warmup_steps: 2
+bf16: true
+ddp_timeout: 180000000
+
+### eval
+do_eval: true
+per_device_eval_batch_size: 1
+eval_strategy: steps
+eval_steps: 20

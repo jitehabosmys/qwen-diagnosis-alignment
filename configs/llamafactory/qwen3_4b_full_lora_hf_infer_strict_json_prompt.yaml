@@ -1,0 +1,8 @@
+model_name_or_path: /hy-tmp/models/Qwen/Qwen3-4B-Instruct-2507
+adapter_name_or_path: /hy-tmp/outputs/llamafactory/qwen3-4b-full-lora-sft-strict-json-prompt-5090ti
+template: qwen3_nothink
+infer_backend: huggingface
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+do_sample: false
+max_new_tokens: 512

@@ -27,9 +27,15 @@ DEFAULT_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_05b_base_hf_infer
 DEFAULT_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_05b_full_lora_hf_infer.yaml"
 DEFAULT_3B_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_3b_base_hf_infer.yaml"
 DEFAULT_3B_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_3b_full_lora_hf_infer.yaml"
+DEFAULT_4B_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen3_4b_base_hf_infer.yaml"
+DEFAULT_4B_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen3_4b_full_lora_hf_infer.yaml"
 DEFAULT_STRICT_EVAL_DATA = REPO_ROOT / "data/llamafactory/diagnosis_sft_strict_json_prompt_eval_alpaca.json"
 DEFAULT_STRICT_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_05b_base_hf_infer_strict_json_prompt.yaml"
 DEFAULT_STRICT_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_05b_full_lora_hf_infer_strict_json_prompt.yaml"
+DEFAULT_3B_STRICT_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_3b_base_hf_infer_strict_json_prompt.yaml"
+DEFAULT_3B_STRICT_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen25_3b_full_lora_hf_infer_strict_json_prompt.yaml"
+DEFAULT_4B_STRICT_BASE_CONFIG = REPO_ROOT / "configs/llamafactory/qwen3_4b_base_hf_infer_strict_json_prompt.yaml"
+DEFAULT_4B_STRICT_LORA_CONFIG = REPO_ROOT / "configs/llamafactory/qwen3_4b_full_lora_hf_infer_strict_json_prompt.yaml"
 
 
 @dataclass
@@ -68,14 +74,25 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--matrix",
-        choices=["default_prompt", "strict_json_prompt", "both", "qwen25_3b_default_prompt"],
+        choices=[
+            "default_prompt",
+            "strict_json_prompt",
+            "both",
+            "qwen25_3b_default_prompt",
+            "qwen25_3b_strict_json_prompt",
+            "qwen3_4b_default_prompt",
+            "qwen3_4b_strict_json_prompt",
+        ],
         default="default_prompt",
         help=(
             "Predefined evaluation matrix. "
             "`default_prompt` runs the existing base/lora pair; "
             "`strict_json_prompt` runs the strict-prompt base/lora pair; "
             "`both` runs all four 0.5B variants; "
-            "`qwen25_3b_default_prompt` runs the 3B base/lora pair. "
+            "`qwen25_3b_default_prompt` runs the 3B base/lora pair; "
+            "`qwen25_3b_strict_json_prompt` runs the 3B strict base/lora pair; "
+            "`qwen3_4b_default_prompt` runs the 4B base/lora pair; "
+            "`qwen3_4b_strict_json_prompt` runs the 4B strict base/lora pair. "
             "Ignored when --variant is provided."
         ),
     )
@@ -257,6 +274,32 @@ def summarize_results(results: list[dict[str, Any]]) -> dict[str, Any]:
         "json_parse_success": [r["sample_id"] for r in results if not r["metrics"]["json_parse_success"]],
         "schema_valid": [r["sample_id"] for r in results if not r["metrics"]["schema_valid"]],
     }
+
+    response_lengths = [r["response_length"] for r in results if isinstance(r.get("response_length"), int)]
+    prompt_lengths = [r["prompt_length"] for r in results if isinstance(r.get("prompt_length"), int)]
+    elapsed_seconds = [r["elapsed_seconds"] for r in results if isinstance(r.get("elapsed_seconds"), (int, float))]
+    finish_reasons = {}
+    finish_reason_counts: dict[str, int] = {}
+    if response_lengths:
+        finish_reasons["response_length_avg"] = round(sum(response_lengths) / len(response_lengths), 4)
+        finish_reasons["response_length_min"] = min(response_lengths)
+        finish_reasons["response_length_max"] = max(response_lengths)
+    if prompt_lengths:
+        finish_reasons["prompt_length_avg"] = round(sum(prompt_lengths) / len(prompt_lengths), 4)
+        finish_reasons["prompt_length_min"] = min(prompt_lengths)
+        finish_reasons["prompt_length_max"] = max(prompt_lengths)
+    if elapsed_seconds:
+        finish_reasons["elapsed_seconds_avg"] = round(sum(elapsed_seconds) / len(elapsed_seconds), 4)
+        finish_reasons["elapsed_seconds_min"] = round(min(elapsed_seconds), 4)
+        finish_reasons["elapsed_seconds_max"] = round(max(elapsed_seconds), 4)
+    for result in results:
+        reason = result.get("finish_reason")
+        if isinstance(reason, str):
+            finish_reason_counts[reason] = finish_reason_counts.get(reason, 0) + 1
+    if finish_reason_counts:
+        finish_reasons["finish_reason_counts"] = finish_reason_counts
+    if finish_reasons:
+        summary["generation_stats"] = finish_reasons
     return summary
 
 
@@ -352,6 +395,45 @@ def get_predefined_variants(matrix: str) -> list[VariantSpec]:
                 eval_data_path=DEFAULT_EVAL_DATA,
             ),
         ]
+    if matrix == "qwen25_3b_strict_json_prompt":
+        return [
+            VariantSpec(
+                name="qwen25_3b_strict_json_prompt_base",
+                config_path=DEFAULT_3B_STRICT_BASE_CONFIG,
+                eval_data_path=DEFAULT_STRICT_EVAL_DATA,
+            ),
+            VariantSpec(
+                name="qwen25_3b_strict_json_prompt_lora",
+                config_path=DEFAULT_3B_STRICT_LORA_CONFIG,
+                eval_data_path=DEFAULT_STRICT_EVAL_DATA,
+            ),
+        ]
+    if matrix == "qwen3_4b_default_prompt":
+        return [
+            VariantSpec(
+                name="qwen3_4b_default_prompt_base",
+                config_path=DEFAULT_4B_BASE_CONFIG,
+                eval_data_path=DEFAULT_EVAL_DATA,
+            ),
+            VariantSpec(
+                name="qwen3_4b_default_prompt_lora",
+                config_path=DEFAULT_4B_LORA_CONFIG,
+                eval_data_path=DEFAULT_EVAL_DATA,
+            ),
+        ]
+    if matrix == "qwen3_4b_strict_json_prompt":
+        return [
+            VariantSpec(
+                name="qwen3_4b_strict_json_prompt_base",
+                config_path=DEFAULT_4B_STRICT_BASE_CONFIG,
+                eval_data_path=DEFAULT_STRICT_EVAL_DATA,
+            ),
+            VariantSpec(
+                name="qwen3_4b_strict_json_prompt_lora",
+                config_path=DEFAULT_4B_STRICT_LORA_CONFIG,
+                eval_data_path=DEFAULT_STRICT_EVAL_DATA,
+            ),
+        ]
     raise ValueError(f"Unknown matrix: {matrix}")
 
 
@@ -383,7 +465,8 @@ def run_variant(
         reference = parse_reference_json(record.get("output", ""))
         started = time.time()
         responses = chat_model.chat(messages=[{"role": "user", "content": prompt_text}], system=system)
-        response_text = responses[0].response_text if responses else ""
+        first_response = responses[0] if responses else None
+        response_text = first_response.response_text if first_response else ""
         metrics = evaluate_output(response_text, reference)
         elapsed = time.time() - started
         log(
@@ -404,6 +487,10 @@ def run_variant(
                 "prompt": prompt_text,
                 "system": system,
                 "raw_output": response_text,
+                "response_length": first_response.response_length if first_response else None,
+                "prompt_length": first_response.prompt_length if first_response else None,
+                "finish_reason": first_response.finish_reason if first_response else None,
+                "elapsed_seconds": round(elapsed, 4),
                 "reference_output": reference,
                 "metrics": metrics,
             }

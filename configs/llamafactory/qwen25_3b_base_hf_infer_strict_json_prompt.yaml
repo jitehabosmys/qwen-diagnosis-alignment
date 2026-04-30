@@ -1,0 +1,7 @@
+model_name_or_path: /hy-tmp/models/Qwen/Qwen2___5-3B-Instruct
+template: qwen
+infer_backend: huggingface
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+do_sample: false
+max_new_tokens: 512

@@ -153,6 +153,20 @@
 2. 确认显存、loss、checkpoint、推理加载都正常
 3. 再跑 `3B full`
 
+如果要进一步判断 scale up 的边际收益，当前也已准备好第一版 `4B` 受控验证配置：
+
+- [5090ti_qwen3_4b_smoke_lora_sft.yaml](/hy-tmp/llm-lab/configs/llamafactory/5090ti_qwen3_4b_smoke_lora_sft.yaml)
+- [5090ti_qwen3_4b_full_lora_sft.yaml](/hy-tmp/llm-lab/configs/llamafactory/5090ti_qwen3_4b_full_lora_sft.yaml)
+
+这里的 `4B` 不是默认直接接管主线，而是用来回答：
+
+- `4B` 相比 `3B` 是否还有足够明显的增益
+- 如果增益有限，是否应停止继续 scale up，转向 `DPO`
+
+当前 `4B` 的训练与第一轮自动评测记录见：
+
+- [2026-04-30-qwen3-4b-sft-log.md](/hy-tmp/llm-lab/docs/2026-04-30-qwen3-4b-sft-log.md)
+
 ## 9. 当前最稳的路线判断
 
 可以把当前项目分成两个阶段理解：
