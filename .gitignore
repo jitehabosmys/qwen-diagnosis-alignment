@@ -31,5 +31,5 @@ logs/
 
 # Local copied evaluation outputs
 20*/
-tmp.md
+tmp*.md
 *_vllm_*.json

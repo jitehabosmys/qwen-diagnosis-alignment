@@ -21,9 +21,11 @@
   - `data/llamafactory/diagnosis_sft_alpaca.json`
   - `data/llamafactory/dataset_info.json`
 - 数据构建记录：
-  - `docs/data-construction-log.md`
+  - `docs/5060ti/data-construction-log.md`
 - 当前阶段总览：
-  - [2026-05-01-project-status-before-4090.md](/hy-tmp/llm-lab/docs/2026-05-01-project-status-before-4090.md)
+  - [2026-05-01-project-status-before-4090.md](/hy-tmp/llm-lab/docs/5060ti/2026-05-01-project-status-before-4090.md)
+- 4090 首轮复现：
+  - [2026-05-01-qwen3-4b-strict-repro-on-4090.md](/hy-tmp/llm-lab/docs/4090/2026-05-01-qwen3-4b-strict-repro-on-4090.md)
 
 主要脚本：
 
