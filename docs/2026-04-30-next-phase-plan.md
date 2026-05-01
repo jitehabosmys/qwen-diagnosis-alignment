@@ -167,6 +167,10 @@
 
 - [2026-04-30-qwen3-4b-sft-log.md](/hy-tmp/llm-lab/docs/2026-04-30-qwen3-4b-sft-log.md)
 
+关于 `vLLM` 的当前判断见：
+
+- [2026-05-01-vllm-smoke-plan.md](/hy-tmp/llm-lab/docs/2026-05-01-vllm-smoke-plan.md)
+
 ## 9. 当前最稳的路线判断
 
 可以把当前项目分成两个阶段理解：
