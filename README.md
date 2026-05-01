@@ -9,6 +9,8 @@
 - 最终 SFT 训练集
 - LLaMA-Factory 可直接使用的数据格式
 - 数据构建过程文档
+- 多轮 `0.5B / 3B / 4B` SFT 与评测记录
+- strict prompt 主线与 pairwise judge 工作流
 
 关键文件：
 
@@ -20,6 +22,8 @@
   - `data/llamafactory/dataset_info.json`
 - 数据构建记录：
   - `docs/data-construction-log.md`
+- 当前阶段总览：
+  - [2026-05-01-project-status-before-4090.md](/hy-tmp/llm-lab/docs/2026-05-01-project-status-before-4090.md)
 
 主要脚本：
 
