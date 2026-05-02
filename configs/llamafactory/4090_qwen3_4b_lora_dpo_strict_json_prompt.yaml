@@ -1,0 +1,53 @@
+### model
+model_name_or_path: /hy-tmp/models/Qwen/Qwen3-4B-Instruct-2507
+adapter_name_or_path: /hy-tmp/outputs/llamafactory/qwen3-4b-full-lora-sft-strict-json-prompt-5090ti
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+
+### method
+stage: dpo
+do_train: true
+finetuning_type: lora
+lora_rank: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target: all
+pref_beta: 0.1
+pref_loss: sigmoid
+
+### dataset
+dataset: diagnosis_dpo_high_only
+dataset_dir: /hy-tmp/llm-lab/data/llamafactory
+template: qwen3_nothink
+cutoff_len: 2048
+preprocessing_num_workers: 8
+dataloader_num_workers: 0
+
+### output
+output_dir: /hy-tmp/outputs/llamafactory/qwen3-4b-lora-dpo-strict-json-prompt-4090
+logging_steps: 5
+save_steps: 25
+plot_loss: true
+overwrite_output_dir: true
+save_total_limit: 3
+save_only_model: false
+report_to: wandb
+run_name: qwen3-4b-lora-dpo-strict-json-prompt-4090
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 5.0e-6
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+resume_from_checkpoint: null
+
+### eval
+# eval_dataset: diagnosis_dpo_high_only
+# val_size: 0.1
+# per_device_eval_batch_size: 1
+# eval_strategy: steps
+# eval_steps: 100

@@ -70,5 +70,25 @@
       "response": "output",
       "system": "system"
     }
+  },
+  "diagnosis_dpo_high_only": {
+    "file_name": "../dpo/final_ds_dsp/dpo_high_only.json",
+    "ranking": true,
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "chosen": "chosen",
+      "rejected": "rejected"
+    }
+  },
+  "diagnosis_dpo_high_plus_medium": {
+    "file_name": "../dpo/final_ds_dsp/dpo_high_plus_medium.json",
+    "ranking": true,
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "chosen": "chosen",
+      "rejected": "rejected"
+    }
   }
 }

@@ -1,0 +1,9 @@
+model_name_or_path: /hy-tmp/models/Qwen/Qwen3-8B
+adapter_name_or_path: /hy-tmp/outputs/llamafactory/qwen3-8b-qlora-dpo-strict-json-prompt-4090
+template: qwen3
+enable_thinking: false
+infer_backend: huggingface
+trust_remote_code: true
+cache_dir: /hy-tmp/models
+do_sample: false
+max_new_tokens: 512
