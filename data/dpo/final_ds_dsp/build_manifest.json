@@ -1,0 +1,13 @@
+{
+  "input_file": "/hy-tmp/llm-lab/data/dpo/merged_ds_dsp_max2/judge_results.jsonl",
+  "max_per_sample_id": 2,
+  "high_only_count": 148,
+  "high_plus_medium_count": 275,
+  "high_only_sample_ids": 122,
+  "high_plus_medium_sample_ids": 190,
+  "confidence_distribution": {
+    "medium": 168,
+    "high": 155,
+    "low": 1
+  }
+}
